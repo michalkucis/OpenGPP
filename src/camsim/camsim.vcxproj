@@ -1,0 +1,161 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\bin\README" />
+    <ClInclude Include="adaptation.h" />
+    <ClInclude Include="buffer.h" />
+    <ClInclude Include="distortionwarpfunctor.h" />
+    <ClInclude Include="dof.h" />
+    <ClInclude Include="dofdiffusion.h" />
+    <ClInclude Include="doflineargatherprimitive.h" />
+    <ClInclude Include="doflineargathersat.h" />
+    <ClInclude Include="feature.h" />
+    <ClInclude Include="featureapertureadapt.h" />
+    <ClInclude Include="featureblur.h" />
+    <ClInclude Include="featurechromabber.h" />
+    <ClInclude Include="featureclamp.h" />
+    <ClInclude Include="featureconstmult.h" />
+    <ClInclude Include="featuredistortionwarp.h" />
+    <ClInclude Include="featuredoadaptation.h" />
+    <ClInclude Include="featuredof.h" />
+    <ClInclude Include="featurelensflaresimple.h" />
+    <ClInclude Include="featurelensflare_centralsymmetry.h" />
+    <ClInclude Include="featurelensflare_glow1.h" />
+    <ClInclude Include="featurelensflare_glow2.h" />
+    <ClInclude Include="featurelensflare_stacker.h" />
+    <ClInclude Include="featurelensflare_star.h" />
+    <ClInclude Include="featuremotionblur.h" />
+    <ClInclude Include="featurenoisesimple.h" />
+    <ClInclude Include="featureprocessor.h" />
+    <ClInclude Include="featurestar.h" />
+    <ClInclude Include="featurestaticfft.h" />
+    <ClInclude Include="featuretransformvalues.h" />
+    <ClInclude Include="featurevignettingfunc.h" />
+    <ClInclude Include="featurevignettingmask.h" />
+    <ClInclude Include="func.h" />
+    <ClInclude Include="hdrimage.h" />
+    <ClInclude Include="hdrimagefunctor.h" />
+    <ClInclude Include="hdrloader.h" />
+    <ClInclude Include="initgrid.h" />
+    <ClInclude Include="inputloader.h" />
+    <ClInclude Include="outputsaver.h" />
+    <ClInclude Include="sdl.h" />
+    <ClInclude Include="std.h" />
+    <ClInclude Include="type.h" />
+    <ClInclude Include="xml.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="adaptation.cpp" />
+    <ClCompile Include="dof.cpp" />
+    <ClCompile Include="featureblur.cpp" />
+    <ClCompile Include="featurenoisesimple.cpp" />
+    <ClCompile Include="featureprocessor.cpp" />
+    <ClCompile Include="featuretransformvalues.cpp" />
+    <ClCompile Include="func.cpp" />
+    <ClCompile Include="halflib_fix.cpp" />
+    <ClCompile Include="hdrimage.cpp" />
+    <ClCompile Include="hdrimagefunctor.cpp" />
+    <ClCompile Include="hdrloader.cpp" />
+    <ClCompile Include="inputloader.cpp" />
+    <ClCompile Include="main_camsim.cpp" />
+    <ClCompile Include="outputsaver.cpp" />
+    <ClCompile Include="sdl.cpp" />
+    <ClCompile Include="std.cpp" />
+    <ClCompile Include="xml.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\bin\camsim.xml">
+      <SubType>Designer</SubType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{9E665080-964D-4267-AEC8-10CBBB31DD58}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>camsim</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(SolutionDir)..\..\bin\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(SolutionDir)..\..\bin\</OutDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;USE_OPENCV;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>avutil.lib;avcodec.lib;avformat.lib;swscale.lib;opencv_ffmpeg210d.lib;ml210d.lib;cv210d.lib;cxcore210d.lib;cvaux210d.lib;highgui210d.lib;IlmImf.lib;half.lib;Imath.lib;sdl.lib;sdl_image.lib;libfftw3f-3.lib;xerces-c_3D.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>IlmImf.lib;xerces-c_3d.lib;libfftw3f-3.lib;sdl.lib;sdl_image.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+    </Link>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="ISO-8859-2"?>
+<configuration>
+  <input name="grayscale" type="single">
+    <file path="images\ANNO-Color.png" type="standard" red="red" green="red" blue="red"/>
+    <color mult="1.0"/>
+    <depth add="0" mult="1" linearize="true" linearizeNear="1" linearizeFar="10000" icosmult="1.0" anglemult="0.0"/>
+  </input>
+  <input name="color" type="single">
+		<file path="images\ANNO-Color.png" type="standard" red="red" green="green" blue="blue"/>
+		<color mult="1.0"/>
+		<depth add="0" mult="1" linearize="true" linearizeNear="1" linearizeFar="10000" icosmult="1.0" anglemult="0.0"/> 	
+	</input>
+  <input name="red" type="single">
+    <file path="images\red.png" type="standard" red="red" green="green" blue="blue"/>
+    <color mult="1.0"/>
+    <depth add="0" mult="1" linearize="true" linearizeNear="1" linearizeFar="10000" icosmult="1.0" anglemult="0.0"/>
+  </input> 
+  <input name="dataset1_0000" type="single">
+    <file path="exrSingle\dataset1_lp_0000.exr" type="exr" envred="R" envgreen="G" envblue="B"/>
+    <file path="exrSingle\dataset1_img_0000.exr" type="exr" red="R" green="G" blue="B" depth="Z"/>
+    <color mult="1.0"/>
+    <depth add="0" mult="0.01" linearize="false" linearizeNear="1" linearizeFar="10000" icosmult="1.0" anglemult="0.352"/>
+  </input>
+  <input name="reposition2" type="sequence">
+    <file path="exrReposition2\img_movingscene_%d.exr" type="exr" envred="R" envgreen="G" envblue="B"/>
+    <file path="exrReposition2\img_movingscene_%d.exr" type="exr" red="R" green="G" blue="B" depth="Z"/>
+    <sequence start="0" end="60" step="1" repeat="1"/>
+    <color mult="1.0"/>
+    <depth add="0" mult="0.01" linearize="false" linearizeNear="1" linearizeFar="10000" icosmult="1.0" anglemult="0.352"/>
+  </input>
+  <input name="intensity1" type="single">
+    <file path="exrChangeLightIntensity\lpr_light1_lamp0_pos0.exr" type="exr" envred="R" envgreen="G" envblue="B"/>
+    <file path="exrChangeLightIntensity\img_light1_lamp0_pos0.exr" type="exr" red="R" green="G" blue="B" depth="Z"/>
+    <color mult="1.0"/>
+    <depth add="0" mult="0.01" linearize="false" linearizeNear="1" linearizeFar="10000" icosmult="1.0" anglemult="0.352"/>
+  </input>
+  <input name="intensity2" type="single">
+    <file path="exrChangeLightIntensity\lpr_light1_lamp10_pos0.exr" type="exr" envred="R" envgreen="G" envblue="B"/>
+    <file path="exrChangeLightIntensity\img_light1_lamp10_pos0.exr" type="exr" red="R" green="G" blue="B" depth="Z"/>
+    <color mult="1.0"/>
+    <depth add="0" mult="0.01" linearize="false" linearizeNear="1" linearizeFar="10000" icosmult="1.0" anglemult="0.352"/>
+  </input>
+  <input name="intensity3" type="single">
+    <file path="exrChangeLightIntensity\lpr_light1_lamp50_pos0.exr" type="exr" envred="R" envgreen="G" envblue="B"/>
+    <file path="exrChangeLightIntensity\img_light1_lamp50_pos0.exr" type="exr" red="R" green="G" blue="B" depth="Z"/>
+    <color mult="1.0"/>
+    <depth add="0" mult="0.01" linearize="false" linearizeNear="1" linearizeFar="10000" icosmult="1.0" anglemult="0.352"/>
+  </input>
+  <input name="intensity4" type="single">
+    <file path="exrChangeLightIntensity\lpr_light1_lamp250_pos0.exr" type="exr" envred="R" envgreen="G" envblue="B"/>
+    <file path="exrChangeLightIntensity\img_light1_lamp250_pos0.exr" type="exr" red="R" green="G" blue="B" depth="Z"/>
+    <color mult="1.0"/>
+    <depth add="0" mult="0.01" linearize="false" linearizeNear="1" linearizeFar="10000" icosmult="1.0" anglemult="0.352"/>
+  </input>
+  <input name="changeLightIntensity" type="list">
+    <ref name="intensity1"/>
+    <ref name="intensity2"/>
+    <ref name="intensity3"/>
+    <ref name="intensity4"/>
+  </input>
+  <input name="opencv_avi" type="video">
+    <color path="video\tree.avi" mult="1.0"/>
+    <library name="opencv"/>
+  </input>
+  <input name="avi" type="video">
+    <color path="video\tree.avi" mult="1.0"/>
+    <library name="opencv"/>
+  </input>
+  <input name="fearX" type="video">
+    <color path="d:\video\Fear.X.2003.LiMiTED.DVDrip.XViD-ALLiANCE.avi" mult="1.0"/>
+    <library name="opencv"/>
+  </input>
+  
+  
+  <output name="demo" type="nosave">
+    <window enabled="true" x="640" y="480"/>
+  </output>
+  <output name="grayscale" type="image">
+    <window enabled="false"/>
+    <file name="output\grayscale.jpg" type="fixed"/>
+  </output>
+  <output name="color" type="image">
+    <window enabled="false"/>
+    <file name="output\color.png" type="fixed"/>
+  </output>
+  <output name="exr" type="image">
+    <window enabled="false"/>
+    <file name="output\hdr.exr" type="exr"/>
+  </output>
+  <output name="sequence1" type="sequence">
+    <window enabled="false"/>
+    <file name="output\seq_%d.png" type="fixed"/>
+    <sequence start="0" end="60" step="1"/>
+  </output>
+	<output name="sequence2" type="sequence">
+    <window enabled="false"/>
+    <file name="output\seq2_%d.png" type="fixed"/>
+    <sequence start="0" end="60" step="1"/>
+  </output>
+  <output name="reposition.avi" type="video">
+    <window enabled="false"/>
+    <video filename="output\reposition.avi" fourcc="XVID" fps="30" repeatFrame="1" />
+    <library name="opencv"/>
+  </output>
+  
+</configuration>

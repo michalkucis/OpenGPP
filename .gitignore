@@ -1,0 +1,30 @@
+# general files/directories
+/doc/
+/data/
+/uploaded/
+/thesis/
+/src/camsim/Debug/
+/src/camsim/Release/
+/src/camsim/ipch/
+/src/*
+!/src/camsim/
+/bin/output/
+/bin/exrChangeLightIntensity/
+/bin/exrMovingLight/
+/bin/exrReposition/
+/bin/exrReposition2/
+/bin/exrSingle/
+
+
+# generated files
+*.exe
+
+
+# specific visual studiu files
+*.sdf
+*.opensdf
+*.suo
+*.user
+*.filters
+*.ilk
+*.pdb
