@@ -1,0 +1,481 @@
+<?xml version="1.0" encoding="ISO-8859-2"?>
+<configuration>  
+  <!-- interpolation arguments 'width, height, interp' are volalite.
+    acceptable interpolation methods are:
+      nearest, linear, cubic, area, lanczos
+  -->
+  
+  <input name="squareTiling" type="single">
+    <colorMap filepath="squareTiling.png"/>
+  </input>
+
+  <input name="singleCV" type="single">
+    <colorMap filepath="anno\ANNO-Color.png"/>
+  </input>
+  <input name="singleCVResized" type="single">
+    <colorMap filepath="anno\ANNO-Color.png" sizeX="128" sizeY="128" interp="linear"/>
+  </input>
+  <input name="singleEXR" type="single">
+    <envMap filepath="exrSingle\dataset1_lp_0000.exr"/>
+    <colorMap filepath="exrSingle\dataset1_img_0000.exr"/>
+  </input>
+  <input name="singleEXRResized" type="single">
+    <colorMap filepath="exrSingle\dataset1_img_0000.exr" sizeX="128" sizeY="128" interp="linear"/>
+  </input>
+  <input name="singleEXREnvMap" type="single">
+    <envMap filepath="exrSingle\dataset1_lp_0000.exr"/>
+    <colorMap filepath="exrSingle\dataset1_img_0000.exr"/>
+  </input>
+  <input name="singleEXRResizedEnvMap" type="single">
+    <envMap filepath="exrSingle\dataset1_lp_0000.exr"/>
+    <colorMap filepath="exrSingle\dataset1_img_0000.exr" sizeX="128" sizeY="128" interp="linear"/>
+  </input>
+  <input name="videoFile" type="videoFile">
+    <colorMap filepath="clock.avi"/>
+  </input>
+  <input name="videoFileResized" type="videoFile">
+    <colorMap filepath="clock.avi"  sizeX="128" sizeY="128" interp="linear"/>
+  </input>
+  <input name="videoDevice" type="videoDevice">
+    <colorMap deviceNum="0"/>
+  </input>
+  <input name="videoDeviceResized" type="videoDevice">
+    <colorMap deviceNum="0" sizeX="128" sizeY="128" interp="linear"/>
+  </input>
+  <input name="sequence" type="sequence">
+    <colorMap filepath="exrReposition2\img_movingscene_%d.exr"/>
+    <sequence start="0" end="60" step="1" repeatStep="1"/>
+  </input>
+  <input name="sequenceResized" type="sequence">
+    <colorMap filepath="exrReposition2\img_movingscene_%d.exr"  sizeX="128" sizeY="128" interp="linear"/>
+    <sequence start="0" end="60" step="1" repeatStep="1"/>
+  </input>
+  <input name="sequenceEnv" type="sequence">
+    <colorMap filepath="exrReposition2\img_movingscene_%d.exr"/>
+    <envMap filepath="exrReposition2\lpr_movingscene_%d.exr"/>
+    <sequence start="0" end="60" step="1" repeatStep="1"/>
+  </input>
+  <input name="sequenceEnvResized" type="sequence">
+    <colorMap filepath="exrReposition2\img_movingscene_%d.exr"  sizeX="128" sizeY="128" interp="linear"/>
+    <envMap filepath="exrReposition2\lpr_movingscene_%d.exr"  sizeX="128" sizeY="128" interp="linear"/>
+    <sequence start="0" end="60" step="1" repeatStep="1"/>
+  </input>
+  
+  
+  
+  <outputScreen name="fullscreen">
+    <screen x="0" y="0" sizeX="1.0" sizeY="1.0"/>
+  </outputScreen>
+  <outputDepthScreen name="fullscreen">
+    <screen x="0" y="0" sizeX="1.0" sizeY="1.0"/>
+  </outputDepthScreen>
+  <outputFile name="out.avi" type="video">
+    <video filename="out.avi" fourcc="XVID" fps="30" repeatFrame="30" />
+    <library name="opencv"/>
+  </outputFile>
+  <outputFile name="out.jpg" type="imageLDR">
+    <image filename="out.jpg"/>
+  </outputFile>
+  <outputFile name="out.exr" type="imageHDR">
+    <image filename="out.exr"/>
+  </outputFile>
+  <outputFile name="outSequence.jpg" type="sequenceLDR">
+    <image filename="out_%d.jpg"/>
+    <sequence start="0" step="1"/>
+  </outputFile>
+  <outputFile name="outSequence.exr" type="sequenceHDR">
+    <image filename="out_%d.exr"/>
+    <sequence start="0" step="1"/>
+  </outputFile>
+
+  
+  <outputScreen name="1stHalf">
+    <screen x="0" y="0" sizeX="0.5" sizeY="1.0"/>
+  </outputScreen>
+  <outputScreen name="2ndHalf">
+    <screen x="0.5" y="0" sizeX="0.5" sizeY="1.0"/>
+  </outputScreen>
+  
+  
+  <distortion name="grid" type="grid">
+    <grid countX="4" countY="2">
+      <point2 x="0" y="0"/>
+      <point2 x="0.1" y="0"/>
+      <point2 x="0.9" y="0"/>
+      <point2 x="1.0" y="0"/>
+
+      <point2 x="0" y="1"/>
+      <point2 x="0.3" y="1"/>
+      <point2 x="0.6" y="1"/>
+      <point2 x="1" y="1"/>
+    </grid>
+  </distortion>
+  <distortion name="radialPolynomial" type="radialFunc">
+    <func type="polynomial">
+      <value x="0.5"/>
+      <value x="0.5"/>
+      <value x="0.0"/>
+      <!-- y = 0.5 x^2 + 0.5 x -->
+    </func>
+  </distortion>
+  <chromaticAberration name="radialPolynomial" type="radialFunc">
+    <redToCyan>
+      <func type="polynomial">
+        <value x="1.03"/>
+        <value x="0"/>
+      </func>
+    </redToCyan>
+    <blueToYellow>
+      <func type="polynomial">
+        <value x="0.97"/>
+        <value x="0"/>
+      </func>
+    </blueToYellow>
+  </chromaticAberration>
+  <vignetting name="image" type="filemask">
+    <filemask filepath="vignettingMask.jpg"/>
+  </vignetting>
+  <vignetting name="func" type="func">
+    <func type="polynomial">
+      <value x="1.0"/>
+      <value x="0"/>
+      <value x="-1.0"/>
+    </func>
+  </vignetting>
+  <depthOfField name="showCoC" type="showCoC">
+    <dofParams
+      focusDistance="0.9"
+      fnumber="3"
+      focalLength="48"
+      sensorSize="42"
+      inputDepthMult="0.01"/>
+    <showcocParams
+      outMult="100"
+      />
+  </depthOfField>
+  <depthOfField name="importance" type="importance">
+    <dofParams
+      focusDistance="0.9"
+      fnumber="3"
+      focalLength="48"
+      sensorSize="42"
+      inputDepthMult="0.01"/>
+    <importanceParams
+      numSamples="7"
+      cocRadiusMult="1"/>
+  </depthOfField>
+  <depthOfField name="regular" type="regular">
+    <dofParams
+      focusDistance="0.9"
+      fnumber="3"
+      focalLength="48"
+      sensorSize="42"
+      inputDepthMult="0.01"/>
+    <regularParams
+      numSamples="7"
+      cocRadiusMult="1"/>
+  </depthOfField>
+  <depthOfField name="diffusion" type="diffusion">
+    <dofParams
+      focusDistance="0.9"
+      fnumber="3"
+      focalLength="48"
+      sensorSize="42"
+      inputDepthMult="0.01"/>
+  </depthOfField>
+  <exposureAdaptation name="pid" type="pid">
+    <pidParams
+      targetValue="0.2"
+      valueP="0.35"
+      valueI="0"
+      valueD="0.1"/>
+  </exposureAdaptation>
+  <motionBlur name="simple" type="simple">
+    <deltaPos x="0" y="0" z="0"/>
+    <deltaView x="10" y="10"/>
+    <samples count="8"/>
+  </motionBlur>
+  <motionBlur name="2phases" type="2phases">
+    <deltaPos x="0" y="0" z="0"/>
+    <deltaView x="10" y="10"/>
+    <samples phase1st="4" phase2nd="4"/>
+  </motionBlur>
+  <motionBlur name="2phases" type="2phases">
+    <deltaPos x="0" y="0" z="0"/>
+    <deltaView x="10" y="10"/>
+    <samples phase1st="4" phase2nd="4"/>
+  </motionBlur>
+  <innerLensReflections name="simple" type="simple">
+    <attenuation value="0.1"/>
+    <ilrMap width="1024" height="1024" dynamic="false"/>
+  </innerLensReflections>
+  <innerLensReflections name="simpleEnvMap" type="simpleEnvMap">
+    <attenuation value="0.1"/>
+    <ilrMap width="512" height="512" dynamic="false"/>
+  </innerLensReflections>
+  <noise name="simple" type="uniform">
+    <uniform begin="0.0" end="1.0"/>
+  </noise>
+  <noise name="emva" type="emva1288">
+    <intensityToPhotons value="1000"/>
+    <emva1288 totalQuantumEfficiently="43.1" readNoise="10" darkCurrent="2"
+              inverseOfOverallSystemGain="2.1" saturationCapacity="35804"/>
+    <exposition time="0.01"/>
+    <DNtoIntensity value="1"/>
+  </noise>
+
+  <effects name="effectNoiseEmva">
+    <noise name="emva"/>
+    <outputScreen name="fullscreen"/>
+    <outputFile name="out.exr"/>
+  </effects>
+  <effects name="effectNoiseUniform">
+    <noise name="simple"/>
+    <outputScreen name="fullscreen"/>
+  </effects>
+  <effects name="effectInnerLensReflectionsEnvMap">
+    <innerLensReflections name="simpleEnvMap"/>
+    <outputScreen name="fullscreen"/>
+  </effects>
+  <effects name="effectInnerLensReflectionsSimple">
+    <innerLensReflections name="simple"/>
+    <outputScreen name="fullscreen"/>
+  </effects>
+  <effects name="effectDOFShowCoC">
+    <depthOfField name="showCoC"/>
+    <outputScreen name="fullscreen"/>
+  </effects>  
+  <effects name="effectDOFImportance">
+    <depthOfField name="importance"/>
+    <outputScreen name="fullscreen"/>
+  </effects>
+  <effects name="effectDOFRegular">
+    <depthOfField name="regular"/>
+    <outputScreen name="fullscreen"/>
+  </effects>
+  <effects name="effectDOFDiffusion">
+    <depthOfField name="diffusion"/>
+    <outputScreen name="fullscreen"/>
+  </effects>
+  <effects name="outColorToScreen">
+    <outputScreen name="fullscreen"/>
+  </effects>
+  <effects name="outDepthToScreen">
+    <outputDepthScreen name="fullscreen"/>
+  </effects>
+  <effects name="outImageToJPG">
+    <outputScreen name="fullscreen"/>
+    <outputFile name="out.jpg"/>
+  </effects>
+  <effects name="outImageToEXR">
+    <outputScreen name="fullscreen"/>
+    <outputFile name="out.exr"/>
+  </effects>
+  <effects name="outSequenceToJPG">
+    <outputScreen name="fullscreen"/>
+    <outputFile name="outSequence.jpg"/>
+  </effects>
+  <effects name="outSequenceToEXR">
+    <outputScreen name="fullscreen"/>
+    <outputFile name="outSequence.exr"/>
+  </effects>
+  <effects name="outVideoToAVI">
+    <outputScreen name="fullscreen"/>
+    <outputFile name="out.avi"/>
+  </effects>
+
+  <effects name="effectDistortionGrid">
+    <outputScreen name="1stHalf"/>
+    <distortion name="grid"/>
+    <outputScreen name="2ndHalf"/>
+  </effects>
+  <effects name="effectDistortionFuncPolynomial">
+    <outputScreen name="1stHalf"/>
+    <distortion name="radialPolynomial"/>
+    <outputScreen name="2ndHalf"/>
+  </effects>
+  <effects name="effectChromaticAberration">
+    <outputScreen name="1stHalf"/>
+    <chromaticAberration name="radialPolynomial"/>
+    <outputScreen name="2ndHalf"/>
+  </effects>
+  <effects name="effectVignettingImage">
+    <outputScreen name="1stHalf"/>
+    <vignetting name="image"/>
+    <outputScreen name="2ndHalf"/>
+  </effects>
+  <effects name="effectVignettingFunc">
+    <outputScreen name="1stHalf"/>
+    <vignetting name="func"/>
+    <outputScreen name="2ndHalf"/>
+  </effects>
+  <effects name="effectExposureAdaptation">
+    <outputScreen name="1stHalf"/>
+    <exposureAdaptation name="pid"/>
+    <outputScreen name="2ndHalf"/>
+  </effects>
+  <effects name="effectMotionBlurSimple">
+    <motionBlur name="simple"/>
+    <outputScreen name="fullscreen"/>
+  </effects>
+  <effects name="effectMotionBlur2Phases">
+    <motionBlur name="2phases"/>
+    <outputScreen name="fullscreen"/>
+  </effects>
+
+  <!-- example of effects:-->
+  <command name="effectNoiseEmva" cycles="1" input="singleCV" effects="effectNoiseEmva">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="256" sizeY="256"/>
+  </command>
+  <command name="effectNoiseUniform" cycles="1" input="singleEXR" effects="effectNoiseUniform">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="effectInnerLensReflectionsEnvMap" cycles="1" input="singleEXR" effects="effectInnerLensReflectionsEnvMap">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="effectInnerLensReflectionsSimple" cycles="1" input="singleEXR" effects="effectInnerLensReflectionsSimple">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="effectMotionBlur2Phases" cycles="1" input="singleEXR" effects="effectMotionBlur2Phases">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="effectMotionBlurSimple" cycles="1" input="singleEXR" effects="effectMotionBlurSimple">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="effectExposureAdaptation" cycles="20" input="singleEXR" effects="effectExposureAdaptation">
+    <window sizeX="1280" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="effectDOFShowCoC" cycles="1" input="singleEXR" effects="effectDOFShowCoC">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="effectDOFImportance" cycles="1" input="singleEXR" effects="effectDOFImportance">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="effectDOFRegular" cycles="1" input="singleEXR" effects="effectDOFRegular">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="effectDOFDiffusion" cycles="1" input="singleEXR" effects="effectDOFDiffusion">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="effectVignettingFunc" cycles="1" input="videoDevice" effects="effectVignettingFunc">
+    <window sizeX="1280" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="effectVignettingImage" cycles="1" input="videoDevice" effects="effectVignettingImage">
+    <window sizeX="1280" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="effectDistortionGrid" cycles="1" input="videoDevice" effects="effectDistortionGrid">
+    <window sizeX="1280" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="effectDistortionFuncPolynomial" cycles="1" input="videoDevice" effects="effectDistortionFuncPolynomial">
+    <window sizeX="1280" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="effectChromaticAberration" cycles="1" input="videoDevice" effects="effectChromaticAberration">
+    <window sizeX="1280" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+
+  <!-- example of different outputs:-->
+  <command name="outColorToScreen" cycles="12" input="sequence" effects="outColorToScreen">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="outDepthToScreen" cycles="4" input="sequence" effects="outDepthToScreen">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="outImageToJPG" cycles="1" input="sequence" effects="outImageToJPG">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="outImageToEXR" cycles="1" input="sequence" effects="outImageToEXR">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="outSequenceToJPG" cycles="4" input="sequence" effects="outSequenceToJPG">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="outSequenceToEXR" cycles="4" input="sequence" effects="outSequenceToEXR">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="outVideoToAVI" cycles="4" input="sequence" effects="outVideoToAVI">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  
+  <!-- example of different inputs:-->
+  <command name="videoDevice" cycles="12" input="videoDevice" effects="outColorToScreen">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="videoDeviceResized" cycles="12" input="videoDeviceResized" effects="outColorToScreen">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="videoFile" cycles="12" input="videoFile" effects="outColorToScreen">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="videoFileResized" cycles="12" input="videoFileResized" effects="outColorToScreen">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="singleCV" cycles="1" input="singleCV" effects="outColorToScreen">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="singleCVResized" cycles="1" input="singleCVResized" effects="outColorToScreen">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="singleEXR" cycles="1" input="singleEXR" effects="outColorToScreen">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="singleEXRResized" cycles="1" input="singleEXRResized" effects="outColorToScreen">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="singleEXREnvMap" cycles="1" input="singleEXREnvMap" effects="outColorToScreen">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="singleEXRResizedEnvMap" cycles="1" input="singleEXRResizedEnvMap" effects="outColorToScreen">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="sequence" cycles="4" input="sequence" effects="outColorToScreen">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="sequenceResized" cycles="4" input="sequenceResized" effects="outColorToScreen">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="sequenceEnv" cycles="4" input="sequenceEnv" effects="outColorToScreen">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+  <command name="sequenceEnvResized" cycles="4" input="sequenceEnvResized" effects="outColorToScreen">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="1024" sizeY="768"/>
+  </command>
+
+
+</configuration>

@@ -1,0 +1,163 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{8A0EE9AF-0E00-467E-9FB3-80EA52BD7AD9}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>LibGPP</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;LIBGPP_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;LIBGPP_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="Application.h" />
+    <ClInclude Include="Base.h" />
+    <ClInclude Include="CLWrapper.h" />
+    <ClInclude Include="Effect.h" />
+    <ClInclude Include="EffectCL.h" />
+    <ClInclude Include="EffectCLImpl.h" />
+    <ClInclude Include="EffectGL.h" />
+    <ClInclude Include="EffectGLImpl.h" />
+    <ClInclude Include="EffectImpl.h" />
+    <ClInclude Include="EffectImplOpenCV.h" />
+    <ClInclude Include="Error.h" />
+    <ClInclude Include="Factory.h" />
+    <ClInclude Include="Functions.h" />
+    <ClInclude Include="GeneratorOfSequenceFilenames.h" />
+    <ClInclude Include="GLClasses.h" />
+    <ClInclude Include="GLClassesFactories.h" />
+    <ClInclude Include="GLTexture2DCL.h" />
+    <ClInclude Include="Input.h" />
+    <ClInclude Include="InputImpl.h" />
+    <ClInclude Include="InputImplOpenCV.h" />
+    <ClInclude Include="Map.h" />
+    <ClInclude Include="Matrix.h" />
+    <ClInclude Include="MemoryLeakDetector.h" />
+    <ClInclude Include="PIDcontroller.h" />
+    <ClInclude Include="PostProcessor.h" />
+    <ClInclude Include="Ptr.h" />
+    <ClInclude Include="Renderer.h" />
+    <ClInclude Include="Set.h" />
+    <ClInclude Include="Vector.h" />
+    <ClInclude Include="Vector2.h" />
+    <ClInclude Include="Vector3.h" />
+    <ClInclude Include="Vector4.h" />
+    <ClInclude Include="Visitors.h" />
+    <ClInclude Include="VisitorsImpl.h" />
+    <ClInclude Include="XML.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Application.cpp" />
+    <ClCompile Include="Base.cpp" />
+    <ClCompile Include="CLWrapper.cpp" />
+    <ClCompile Include="EffectCLImpl.cpp" />
+    <ClCompile Include="EffectGL.cpp" />
+    <ClCompile Include="EffectGLImpl.cpp" />
+    <ClCompile Include="EffectImpl.cpp" />
+    <ClCompile Include="EffectImplOpenCV.cpp" />
+    <ClCompile Include="Error.cpp" />
+    <ClCompile Include="FixOpenEXR171.cpp" />
+    <ClCompile Include="Functions.cpp" />
+    <ClCompile Include="GeneratorOfSequenceFilenames.cpp" />
+    <ClCompile Include="GLClasses.cpp" />
+    <ClCompile Include="InputImplOpenCV.cpp" />
+    <ClCompile Include="MemoryLeakDetector.cpp" />
+    <ClCompile Include="PostProcessor.cpp" />
+    <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="XML.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\LibCLFFT\LibCLFFT.vcxproj">
+      <Project>{c5ddb89b-da78-4892-882d-560f90dc093f}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\LibOpenCLWrapper\LibOpenCLWrapper.vcxproj">
+      <Project>{5a3c8f8d-75fe-42a6-acb1-d0cbc487cd3d}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Data\kernels\dofDiffusion.cl" />
+    <None Include="..\Data\kernels\kernels.cl" />
+    <None Include="..\Data\shaders\computeCoC.fs" />
+    <None Include="..\Data\shaders\distortionGridBlue.fs" />
+    <None Include="..\Data\shaders\distortionGridGreen.fs" />
+    <None Include="..\Data\shaders\distortionGridRed.fs" />
+    <None Include="..\Data\shaders\dofCore.fs" />
+    <None Include="..\Data\shaders\imageMult.fs" />
+    <None Include="..\Data\shaders\lensFlareStarVignetting.fs" />
+    <None Include="..\Data\shaders\lensFlareStarVignetting.vs" />
+    <None Include="..\Data\shaders\motionBlur.fs" />
+    <None Include="..\Data\shaders\noiseEmva.fs" />
+    <None Include="..\Data\shaders\noiseSimple.fs" />
+    <None Include="..\Data\shaders\noiseUniform.fs" />
+    <None Include="..\Data\shaders\simple.fs" />
+    <None Include="..\Data\shaders\test.fs" />
+    <None Include="..\Data\shaders\vignettingImage.fs" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
