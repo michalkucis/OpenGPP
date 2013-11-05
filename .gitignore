@@ -1,19 +1,20 @@
 # general files/directories
-/OpenGPP/doc/
-/OpenGPP/data/
-/OpenGPP/uploaded/
-/OpenGPP/thesis/
-/OpenGPP/src/camsim/Debug/
-/OpenGPP/src/camsim/Release/
-/OpenGPP/src/camsim/ipch/
-/OpenGPP/src/*
-!/OpenGPP/src/camsim/
-/OpenGPP/bin/output/
-/OpenGPP/bin/exrChangeLightIntensity/
-/OpenGPP/bin/exrMovingLight/
-/OpenGPP/bin/exrReposition/
-/OpenGPP/bin/exrReposition2/
-/OpenGPP/bin/exrSingle/
+/doc/
+/data/
+/uploaded/
+/thesis/
+/src/OpenGPP-0.1.0/Debug/
+/src/OpenGPP-0.1.0/Release/
+/src/OpenGPP-0.1.0/ipch/
+/src/OpenGPP/ipch
+/src/OpenGPP/**/Debug/
+/src/OpenGPP/**/Release/
+/bin/output/
+/bin/exrChangeLightIntensity/
+/bin/exrMovingLight/
+/bin/exrReposition/
+/bin/exrReposition2/
+/bin/exrSingle/
 
 
 # generated files
