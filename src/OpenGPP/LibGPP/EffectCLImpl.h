@@ -171,14 +171,23 @@ class EffectCLComputeCoC: public EffectCL<EffectDOF>
 	cl::Kernel m_kernel;
 public:
 	EffectCLComputeCoC(Ptr<GLTexturesRGBFactory> factoryRGB, Ptr<GLTexturesRedFactory> factoryRed, 
-			float aspectRatio, Ptr<EffectCLObjectsFactory> factory, float multOut = 1.0f): 
-	  EffectCL(factoryRGB, factoryRed, factory),
-		  m_bufferComputeCoC(*m_context, CL_MEM_READ_ONLY, sizeof(ComputeDoFCoCStruct)),
-		  m_funcComputeCoC(1.77f, 3, 48, 42, 0.01f),
-		  m_multOut(multOut)
-	  {
-		  m_kernel = createKernel(*m_context, "kernels\\kernels.cl", "kernelComputeCoC");
-	  }
+		float aspectRatio, Ptr<EffectCLObjectsFactory> factory, float multOut = 1.0f): 
+	EffectCL(factoryRGB, factoryRed, factory),
+		m_bufferComputeCoC(*m_context, CL_MEM_READ_ONLY, sizeof(ComputeDoFCoCStruct)),
+		m_funcComputeCoC(1.77f, 3, 48, 42, 0.01f),
+		m_multOut(multOut)
+	{
+		m_kernel = createKernel(*m_context, "kernels\\kernels.cl", "kernelComputeCoC");
+	}
+	EffectCLComputeCoC(Ptr<SharedObjectsFactory> sof, 
+		float aspectRatio, Ptr<EffectCLObjectsFactory> factory, float multOut = 1.0f): 
+	EffectCL(sof->getFactoryRGBTexture(), sof->getFactoryRedTexture(), factory),
+		m_bufferComputeCoC(*m_context, CL_MEM_READ_ONLY, sizeof(ComputeDoFCoCStruct)),
+		m_funcComputeCoC(1.77f, 3, 48, 42, 0.01f),
+		m_multOut(multOut)
+	{
+		m_kernel = createKernel(*m_context, "kernels\\kernels.cl", "kernelComputeCoC");
+	}
 
 	  void setFuncCoC (FuncFtoFCompCoC& func)
 	  {
@@ -545,9 +554,19 @@ class EffectCLDOFDistribution: public EffectDOF
 	Ptr<EffectCLDOFDistributionVertical> m_effectVertical;
 	Ptr<EffectCLDOFDistributionHorizontal> m_effectHorizontal;
 public:
+	EffectCLDOFDistribution(Ptr<SharedObjectsFactory> sof, float aspectRatio, Ptr<EffectCLObjectsFactory> clFactory = NULL):
+		EffectDOF(sof->getFactoryRGBTexture(), sof->getFactoryRedTexture())
+	{
+		if (clFactory.isNull())
+			clFactory = new EffectCLObjectsFactory;
+		m_effectVertical = new EffectCLDOFDistributionVertical(sof->getFactoryRGBTexture(), 
+			sof->getFactoryRedTexture(), aspectRatio, clFactory);
+		m_effectHorizontal = new EffectCLDOFDistributionHorizontal(sof->getFactoryRGBTexture(), 
+			sof->getFactoryRedTexture(), aspectRatio, clFactory, 1.0f, m_effectVertical->getBufferABCRGB());
+	}
 	EffectCLDOFDistribution(Ptr<GLTexturesRGBFactory> factoryRGB, Ptr<GLTexturesRedFactory> factoryRed, 
 		float aspectRatio, Ptr<EffectCLObjectsFactory> clFactory = NULL):
-		EffectDOF(factoryRGB, factoryRed)
+	EffectDOF(factoryRGB, factoryRed)
 	{
 		if (clFactory.isNull())
 			clFactory = new EffectCLObjectsFactory;
@@ -651,6 +670,31 @@ public:
 			m_fft(factory->getCLGLContext(), factory->getCLCommandQueue(), uint2(width,height)),
 			m_mult(factory),
 			m_lensFlareMult(1)
+	{
+		m_width = width;
+		m_height = height;
+		m_dynamic = dynamic;
+		m_queue = factory->getCLCommandQueue();
+		m_kernelStar = createKernel(*m_context, "kernels\\kernels.cl", "star");
+		m_factoryCLObjects = factory;
+		if(!m_dynamic)
+		{  
+			allocBuffers(factory);
+			initStar(m_kernelRe);
+			m_kernelIm->zeroesMemory();
+			clFFT_Direction dir = clFFT_Forward;
+			m_fft.perform(*m_kernelRe, *m_kernelIm, dir);
+		}
+		m_kernelFillBuffer = createKernel(*m_context, "kernels\\kernels.cl", "fillBufferFromImage");
+		m_kernelFillImage = createKernel(*m_context, "kernels\\kernels.cl", "fillImageFromBufferAndImage");
+	}
+
+	EffectLensFlareStarFromSimple(Ptr<SharedObjectsFactory> sof,
+		int width, int height, bool dynamic, Ptr<EffectCLObjectsFactory> factory): 
+	EffectCL<EffectGL> (sof->getFactoryRGBTexture(), sof->getFactoryRedTexture(), factory),
+		m_fft(factory->getCLGLContext(), factory->getCLCommandQueue(), uint2(width,height)),
+		m_mult(factory),
+		m_lensFlareMult(1)
 	{
 		m_width = width;
 		m_height = height;
@@ -910,6 +954,19 @@ public:
 				Ptr<EffectCLObjectsFactory> factory): 
 		m_programVignetting("shaders\\lensFlareStarVignetting.vs", "shaders\\lensFlareStarVignetting.fs"),
 		EffectLensFlareStarFromSimple(factoryRGB, factoryRed, width, height, dynamic, factory)
+	{
+		m_kernelFillImage2 = createKernel(*m_context, "kernels\\kernels.cl", "fillImageFromCutBufferAndImage");
+		if(!m_dynamic)
+		{
+			loadTextures();
+		}
+		m_FoV = float2((float)M_PI / 2, (float)M_PI / 2 * 480 / 640);
+	}
+
+	EffectLensFlareStarFromEnvMap (Ptr<SharedObjectsFactory> sof, int width, int height, bool dynamic,
+		Ptr<EffectCLObjectsFactory> factory): 
+	m_programVignetting("shaders\\lensFlareStarVignetting.vs", "shaders\\lensFlareStarVignetting.fs"),
+		EffectLensFlareStarFromSimple(sof->getFactoryRGBTexture(), sof->getFactoryRedTexture(), width, height, dynamic, factory)
 	{
 		m_kernelFillImage2 = createKernel(*m_context, "kernels\\kernels.cl", "fillImageFromCutBufferAndImage");
 		if(!m_dynamic)

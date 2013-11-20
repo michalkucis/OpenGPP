@@ -322,7 +322,7 @@
     <motionBlur name="2phases"/>
     <outputScreen name="fullscreen"/>
   </effects>
-
+  
   <!-- example of effects:-->
   <command name="effectNoiseEmva" cycles="1" input="singleCV" effects="effectNoiseEmva">
     <window sizeX="640" sizeY="480"/>

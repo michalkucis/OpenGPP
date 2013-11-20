@@ -13,9 +13,15 @@ class Renderer
 	Ptr<GLTexture2D> m_color;
 	Ptr<GLTexture2D> m_depth;
 public:
-	Renderer ()
+	//Renderer ()
+	//{
+	//	m_initialized = new bool(false);
+	//}
+
+	Renderer(int width, int height, uint internalColorFormat, uint colorFormat, bool depthExist, uint depthFormat)
 	{
 		m_initialized = new bool(false);
+		init(width, height, internalColorFormat, colorFormat, depthExist, depthFormat);
 	}
 
 	void clear ()

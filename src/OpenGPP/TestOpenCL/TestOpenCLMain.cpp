@@ -93,10 +93,11 @@ public:
 
 
 
-class EffectTest: public EffectLensFlareStarFromSimple<1024,1024,true>
+class EffectTest: public EffectLensFlareStarFromEnvMap
 {
 public:
-	EffectTest(): EffectLensFlareStarFromSimple<1024,1024,true>(new EffectCLObjectsFactory)
+	EffectTest(): EffectLensFlareStarFromEnvMap(new GLTexturesRGBFactory(uint2(512,512)), new GLTexturesRedFactory(uint2(512,512)),
+		1024,true,new EffectCLObjectsFactory)
 	{}
 };
 

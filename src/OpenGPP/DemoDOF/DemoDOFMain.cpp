@@ -28,11 +28,13 @@ public:
 	ApplicationDOF (): Application(1024,768)
 	{
 		m_dofCoCFunc = NULL;
+		m_sof = new SharedObjectsFactory(uint2(1024, 768));
 	}
 private:
 	PostProcessor m_ppWithDepth;
 	Ptr<Input> m_inputs[4];
 	EffectDOFCircleOfConfusionInternal* m_dofCoCFunc;
+	Ptr<SharedObjectsFactory> m_sof;
 public:
 	void handleKeyDown( SDL_Keysym* keysym )
 	{
@@ -49,22 +51,22 @@ public:
 			break;
 		case '3':
 			vec.clear();
-			vec.pushBack(Ptr<Effect>(new EffectDOFShowCoC));
+			vec.pushBack(Ptr<Effect>(new EffectDOFShowCoC(m_sof)));
 			vec.pushBack(Ptr<Effect>(new EffectRenderToScreen(0,0,1,1)));
 			break;
 		case '4':
 			vec.clear();
-			vec.pushBack(Ptr<Effect>(new EffectDOFRegular(5,1,1024.0f/768.0f)));
+			vec.pushBack(Ptr<Effect>(new EffectDOFRegular(m_sof, 5,1,1024.0f/768.0f)));
 			vec.pushBack(Ptr<Effect>(new EffectRenderToScreen(0,0,1,1)));
 			break;
 		case '5':
 			vec.clear();
-			vec.pushBack(Ptr<Effect>(new EffectDOFImportance(5,1,1024.0f/768.0f)));
+			vec.pushBack(Ptr<Effect>(new EffectDOFImportance(m_sof, 5,1,1024.0f/768.0f)));
 			vec.pushBack(Ptr<Effect>(new EffectRenderToScreen(0,0,1,1)));
 			break;
 		case '6':
 			vec.clear();
-			vec.pushBack(Ptr<Effect>(new EffectCLDOFDistribution(1024.0f/768.0f)));
+			vec.pushBack(Ptr<Effect>(new EffectCLDOFDistribution(m_sof, 1024.0f/768.0f)));
 			vec.pushBack(Ptr<Effect>(new EffectRenderToScreen(0,0,1,1)));
 			break;
 		case SDLK_ESCAPE:

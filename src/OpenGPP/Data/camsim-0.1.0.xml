@@ -1,0 +1,267 @@
+<configuration>
+  <vignettingRadial name="default">
+    <func type="polynomial" degree="2">
+      <value>-1.0</value>
+      <value>0</value>
+      <value>1</value>
+    </func>
+  </vignettingRadial>
+  <vignettingMask name="default">
+		<mask filepath="images\vignetting-mask.jpg"/>
+	</vignettingMask>
+  <distortionRadial name="default">
+    <sizeOfGrid x="16" y="16"/>
+    <!-- radial distortion model is simulated by the warping. 
+						This element defines resolution of the grid -->
+    <param alpha="1" beta="1" gamma="-0.0" u0="0" v0="0"/>
+    <!-- defines radial distortion function: -->
+    <func type="polynomial" degree="2">
+      <value>0.5</value>
+      <value>0.5</value>
+      <value>0</value>
+    </func>
+  </distortionRadial>
+  <distortionGrid name="default">
+    <grid countX="4" countY="2">
+      <point2 x="0" y="0"/>
+      <point2 x="0.1" y="0"/>
+      <point2 x="0.9" y="0"/>
+      <point2 x="1.0" y="0"/>
+
+      <point2 x="0" y="1"/>
+      <point2 x="0.3" y="1"/>
+      <point2 x="0.6" y="1"/>
+      <point2 x="1" y="1"/>
+    </grid>
+  </distortionGrid>
+  <chromaberRadial name="default">
+    <sizeOfGrid x="10" y="10"/>
+    <red_cyan>
+      <func type="polynomial" degree="1">
+        <value>1.03</value>
+        <value>0</value>
+      </func>
+    </red_cyan>
+    <blue_yellow>
+      <func type="polynomial" degree="1">
+        <value>0.970</value>
+        <value>0</value>
+      </func>
+    </blue_yellow>
+  </chromaberRadial>
+  <blur name="default">
+    <func type="polynomial" degree="1">
+      <value>200</value>
+      <value>0</value>
+    </func>
+  </blur>
+  <depthoffield name="diffusion">
+    <type name="diffusion" iteration="1"/>
+    <aperture type="fixed" fnum="10"/>
+    <!-- <aperture type="adapt"/> -->
+    <parameters sensorSize="42" focalLen="48"/>
+    <distance type="fixed" depth="1.27"/>
+   </depthoffield>
+  <depthoffield name="gather">
+    <type name="gather"/>
+    <aperture type="fixed" fnum="10"/>
+    <parameters sensorSize="42" focalLen="48"/>
+    <distance type="fixed" depth="1.27"/>
+  </depthoffield>
+<!--  <lensflareSimple name="default">
+    <envmap angleX="3.14" angleY="3.14" sizeX="400" sizeY="400"/>
+    <fov angleX="1.10" angleY="0.83"/>
+    <params starMult="0.015" csMult1="0" csMult2="-4"/>
+  </lensflareSimple>
+-->
+  <lensflareSimple name="default">
+    <envmap angleX="3.14" angleY="3.14" sizeX="256" sizeY="256"/>
+    <fov angleX="1.10" angleY="0.83"/>
+    <params starMult="0.015" csMult1="0" csMult2="-4"/>
+  </lensflareSimple>
+  <motionblurParam name="default">
+    <deltapos>
+      <point3 x="0" y="0.00" z="0.00"/>
+    </deltapos>
+    <deltatarget>
+      <point2 x="0.08" y="0.0"/>
+    </deltatarget>
+    <distancetarget>
+      <float x="2.6"/>
+    </distancetarget>
+    <fovangle>
+      <point2 x="1.106" y="0.830"/>
+    </fovangle>
+    <iterations number="20"/>
+  </motionblurParam>
+  <clampValues name="default">
+    <max value="0.5"/>
+  </clampValues>
+  <noiseSimple name="default" >
+    <limit min="-0.2" max="0.3"/>
+    <func type="polynomial" degree="0">
+      <value>0.1</value>
+    </func>
+  </noiseSimple>
+  <transformValues name="default">
+    <func type="polynomial" degree="1">
+      <value>-1</value>
+      <value>1</value>
+    </func>
+  </transformValues>
+  <apertureAdapt name="default">
+    <param type="adapt" fnum="1" brightness="true"/>
+    <adapt middlegray="0.49" minFnum="0.01" maxFnum="16.0" maxSpeed="16" PIregKp="0.5" PIregKi="0.0"/>
+  </apertureAdapt>
+
+  
+
+  <effects name="vignetting regular">
+    <vignettingRadial name="default"/>
+  </effects>
+
+    <effects name="vignetting irregular">
+    <vignettingMask name="default"/>
+  </effects>
+  <effects name="distortion radial">
+    <distortionRadial name="default"/>
+  </effects>
+  <effects name="distortion grid">
+    <distortionGrid name="default"/>
+  </effects>
+  <effects name="chromatic aberration">
+    <chromaberRadial name="default"/>
+  </effects>
+  <effects name="blur">
+    <blur name="default"/>
+  </effects>
+  <effects name="dof gather">
+    <depthoffield name="gather"/>
+  </effects>
+  <effects name="dof diffusion">
+    <depthoffield name="diffusion"/>
+  </effects>
+  <effects name="lensflare simple">
+    <!-- ERROR.. need debug!! -->
+    <lensflareSimple name="default"/>
+  </effects>
+  <effects name="motionblur">
+    <motionblurParam name="default"/>
+  </effects>
+  <effects name="noisesimple">
+    <clampValues name="default"/>
+    <noiseSimple name="default"/>
+  </effects>
+  <effects name="transformValues">
+    <transformValues name="default"/>
+  </effects>
+  <effects name="apertureAdapt">
+    <apertureAdapt name="default"/>
+  </effects>          
+            
+  <commands name="video">
+    <!--   
+    <output name="apertureAdapt.avi"/>
+    <effects name="apertureAdapt"/>
+    
+    <input name="intensity1"/>
+    <commit/><commit/><commit/><commit/><commit/>
+    <commit/><commit/><commit/><commit/><commit/>
+    <commit/><commit/><commit/><commit/><commit/>
+    <commit/><commit/><commit/><commit/><commit/>
+    <commit/><commit/><commit/><commit/><commit/>
+    <commit/><commit/><commit/><commit/><commit/>
+    
+    <input name="intensity2"/>
+    <commit/><commit/><commit/><commit/><commit/>
+    <commit/><commit/><commit/><commit/><commit/>
+    <commit/><commit/><commit/><commit/><commit/>
+    <commit/><commit/><commit/><commit/><commit/>
+    <commit/><commit/><commit/><commit/><commit/>
+    <commit/><commit/><commit/><commit/><commit/>
+    <input name="intensity3"/>
+    <commit/><commit/><commit/><commit/><commit/>
+    <commit/><commit/><commit/><commit/><commit/>
+    <commit/><commit/><commit/><commit/><commit/>
+    <commit/><commit/><commit/><commit/><commit/>
+    <commit/><commit/><commit/><commit/><commit/>
+    <commit/><commit/><commit/><commit/><commit/>
+    <input name="intensity4"/>
+    <commit/><commit/><commit/><commit/><commit/>
+    <commit/><commit/><commit/><commit/><commit/>
+    <commit/><commit/><commit/><commit/><commit/>
+    <commit/><commit/><commit/><commit/><commit/>
+    <commit/><commit/><commit/><commit/><commit/>
+    <commit/><commit/><commit/><commit/><commit/>
+    <input name="intensity1"/>
+    <commit/><commit/><commit/><commit/><commit/>
+    <commit/><commit/><commit/><commit/><commit/>
+    <commit/><commit/><commit/><commit/><commit/>
+    <commit/><commit/><commit/><commit/><commit/>
+    <commit/><commit/><commit/><commit/><commit/>
+    <commit/><commit/><commit/><commit/><commit/>
+    
+    <output name="video.avi"/>
+    <output name="exr"/>
+    -->
+    
+    <input name="changeLightIntensity"/>
+    <effects name="lensflare simple"/>
+    <commit/>
+    
+    <!--    
+    <input name="caption"/>
+    <commit/>
+    
+    <input name="changeLightIntensity"/>
+    <commit/>
+
+    <input name="changeLightIntensity"/>
+    <effects name="vignetting regular"/>
+    <commit/>
+
+    <input name="changeLightIntensity"/>
+    <effects name="vignetting irregular"/>
+    <commit/>
+
+    <input name="changeLightIntensity"/>
+    <effects name="distortion radial"/>
+    <commit/>
+
+    <input name="changeLightIntensity"/>
+    <effects name="distortion grid"/>
+    <commit/>
+
+    <input name="changeLightIntensity"/>
+    <effects name="chromatic aberration"/>
+    <commit/>
+
+    <input name="changeLightIntensity"/>
+    <effects name="blur"/>
+    <commit/>
+   
+    <input name="changeLightIntensity"/>
+    <effects name="dof gather"/>
+    <commit/>
+
+    <input name="changeLightIntensity"/>
+    <effects name="dof diffusion"/>
+    <commit/>
+ 
+    <input name="changeLightIntensity"/>
+    <effects name="motionblur"/>
+    <commit/>
+ 
+    <input name="changeLightIntensity"/>
+    <features name="noisesimple"/>
+    <commit/>
+
+    <input name="changeLightIntensity"/>
+    <features name="transformValues"/>
+    <commit/>
+
+    <input name="changeLightIntensity"/>
+    <features name="apertureAdapt"/>
+    <commit/>
+-->
+  </commands>

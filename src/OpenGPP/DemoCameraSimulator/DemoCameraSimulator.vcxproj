@@ -80,19 +80,27 @@
     <ClCompile Include="DemoCameraSimulatorMain.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\LibCLFFT\LibCLFFT.vcxproj">
+      <Project>{c5ddb89b-da78-4892-882d-560f90dc093f}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\LibGPP\LibGPP.vcxproj">
       <Project>{8a0ee9af-0e00-467e-9fb3-80ea52bd7ad9}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\LibOpenCLWrapper\LibOpenCLWrapper.vcxproj">
+      <Project>{5a3c8f8d-75fe-42a6-acb1-d0cbc487cd3d}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Data\camsim.xml">
       <SubType>Designer</SubType>
     </None>
+    <None Include="..\Data\cars.xml">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApplicationPP.h" />
     <ClInclude Include="Debug.h" />
-    <ClInclude Include="ObjectsLoadedFromXML.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

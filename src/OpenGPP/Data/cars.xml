@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="iso-8859-2"?>
+<configuration>
+  <!-- Aplikacia simulatora sa spusta prikazom vo formate:
+  camsim.exe XML_SUBOR NAZOV_PRIKAZU
+  Napr.: camsim.exe cars.xml all
+  Tento prikaz sposobi, ze aplikacia vyhlada v subore cars.xml element <command name="all">
+  V nasom pripade najde blok:
+  <command name="cars" cycles="64" input="sequence" effects="all">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="512" sizeY="512"/>
+  </command>
+	Tento element obsahuje informaciu o pocte vykonavanych cyklov simulacie (64), 
+	nazov elementu pre vstup "sequence" a nazov elementu obsahujuci efekty "all".
+	Element <input name="sequence"> obsahuje informacie o nacitavanom vstupe, 
+	v tomto pripade vstupom je sekvencia obrazkov cars\1.png az cars.64.png.
+	Ak chceme pouzit len jeden obrazok ako vstup, pouzijeme element
+	<input name="singleExample">.
+	
+  Aplikaciu efektov obsluhuje element <effects>. V <command>-e sme definovali,
+  ze chceme pouzit <effects name="all">
+  <effects name="all">
+    <chromaticAberration name="radialPolynomial"/>
+    <vignetting name="func"/>
+    <noise name="emva"/>
+    <outputScreen name="fullscreen"/>
+  </effects>
+  Tento blok definuje poradie efektov, ktore sa budu na vstup aplikovat.
+  Najprv do vstupu sa prida chromaticka aberracia, potom vinetacia, sum a 
+  vo vysledok sa zobrazi na obrazovku.
+  
+  Popis jednotlivych efektov:
+  <chromaticAberration> definuje posun farebnych zloziek obrazu.
+    Element <redToCyan> definuje posun cervenej zlozky vzhladom na stred obrazu.
+    V nasom pripade je definovany posun f(x)=1.3*x. 
+    Pre stred obrazu plati x=0.
+    Pre bod umiestneny na lavom okraji obrazku v strede a pre bod v strede na hornom
+    okraju obrazku plati x=1/sqrt(2).
+    Pre bod umiestneny vlavo hore plati x=1.
+    Po transformacii bude platit pre stred f(0)=0, pre dalsi bod
+    f(1)=1.3...
+    Posun modrej zlozky je definovany elementom <blueToYellow>
+    a pocita sa rovnako...
+    
+  <vignetting>
+    V obraze sa prejavi stredovo sumerna vinetacia, kde funkcia definuje utlm 
+    svetla v obraze. V nasom pripade sa pouzije funkcia:
+      <func type="polynomial">
+        <value x="1.0"/>
+        <value x="0"/>
+        <value x="-1.0"/>
+      </func>
+    Kde utlm pre stred obrazu bude platit: f(x=0)=1.0 + 0.0*x - 1*x*x = 1.0
+    A pre okraje obrazu f(x=1)=1.0 + 0.0*x - 1*x*x = 0.0.
+  
+    
+  
+  -->
+  
+  
+  
+  
+  <outputScreen name="fullscreen">
+    <screen x="0" y="0" sizeX="1.0" sizeY="1.0"/>
+  </outputScreen>
+  
+	<chromaticAberration name="radialPolynomial" type="radialFunc">
+    <redToCyan>
+      <func type="polynomial">
+        <value x="1.03"/>
+        <value x="0"/>
+      </func>
+    </redToCyan>
+    <blueToYellow>
+      <func type="polynomial">
+        <value x="0.97"/>
+        <value x="0"/>
+      </func>
+    </blueToYellow>
+  </chromaticAberration>
+  
+  <vignetting name="func" type="func">
+    <func type="polynomial">
+      <value x="1.0"/>
+      <value x="0"/>
+      <value x="-1.0"/>
+    </func>
+  </vignetting>
+  
+	<noise name="emva" type="emva1288">
+    <intensityToPhotons value="100"/>
+    <emva1288 totalQuantumEfficiently="43.1" readNoise="10" darkCurrent="2"
+              inverseOfOverallSystemGain="2.1" saturationCapacity="35804"/>
+    <exposition time="0.01"/>
+    <DNtoIntensity value="1"/>
+  </noise>
+  
+  <outputFile name="sequence" type="sequenceLDR">
+    <image filename="out_%d.jpg"/>
+    <sequence start="1" step="1"/>
+  </outputFile>
+  
+  <effects name="all">    
+    <!-- <chromaticAberration name="radialPolynomial"/>
+    <vignetting name="func"/>
+    <noise name="emva"/>
+    -->
+    <outputScreen name="fullscreen"/>
+    <outputFile name="sequence"/>
+  </effects>
+  
+  <input name="sequence" type="sequence">
+    <colorMap filepath="cars\%d.png"/>
+    <sequence start="1" end="50" step="1" repeatStep="1"/>
+  </input>
+  
+   <input name="singleExample" type="single">
+    <colorMap filepath="cars\1.png"/>
+  </input>
+	 
+  <command name="cars" cycles="50" input="sequence" effects="all">
+    <window sizeX="640" sizeY="480"/>
+    <processing sizeX="240" sizeY="240"/>
+  </command>
+</configuration>

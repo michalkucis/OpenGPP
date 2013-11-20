@@ -15,7 +15,7 @@
 /bin/exrReposition/
 /bin/exrReposition2/
 /bin/exrSingle/
-
+/src/OpenGPP/Data/out*
 
 # generated files
 *.exe
@@ -29,3 +29,4 @@
 *.filters
 *.ilk
 *.pdb
+*.nvact

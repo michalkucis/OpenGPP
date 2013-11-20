@@ -97,11 +97,14 @@
     <ClInclude Include="Map.h" />
     <ClInclude Include="Matrix.h" />
     <ClInclude Include="MemoryLeakDetector.h" />
+    <ClInclude Include="ObjectsLoadedFromXML.h" />
+    <ClInclude Include="OpenGPP.h" />
     <ClInclude Include="PIDcontroller.h" />
     <ClInclude Include="PostProcessor.h" />
     <ClInclude Include="Ptr.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Set.h" />
+    <ClInclude Include="SharedObjectsFactory.h" />
     <ClInclude Include="Vector.h" />
     <ClInclude Include="Vector2.h" />
     <ClInclude Include="Vector3.h" />

@@ -7,7 +7,10 @@
 
 #pragma comment(lib, "Half.lib")
 #pragma comment(lib, "IlmImf.lib")
-
+/*#pragma comment(lib, "highgui210.lib")
+#pragma comment(lib, "cv210.lib")
+#pragma comment(lib, "cxcore210.lib")
+*/
 
 namespace Imf
 {

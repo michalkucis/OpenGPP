@@ -14,45 +14,24 @@
 
 class AppTest: public Application
 {
+	Ptr<PostProcessor> m_pp;
+
 public:
-	AppTest() : Application(640,480)
+	AppTest(): Application(250, 250)
 	{
-
 	}
-protected:
-	Renderer m_renderer;
-	PostProcessor m_pp;
-	int m_countRenders;
-protected:
-	virtual void initData()
+	void initData()
 	{
-		m_renderer.init(200,200,GL_RGBA,GL_UNSIGNED_BYTE,false,GL_DEPTH_COMPONENT);
+		m_pp = new PostProcessor();
+		m_pp->m_input = new InputLoadFromSingleFileOpenEXR("exrChangeLightIntensity\\img_light1_lamp0_pos0.exr");
+		m_pp->m_vecEffects.pushBack(new EffectRenderToScreen(0,0,1,1));
 	}
-	void render ()
+	void render()
 	{
-		m_renderer.beginRender();
-		drawScreen();
-		m_renderer.endRender();
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glOrtho(0, 640 , 480 , 0, -1, 1);
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		m_pp.process();
-		SDL_GL_SwapBuffers( );
-
-		if (! --m_countRenders)
-			SDL_Quit();
+		m_pp->process();
 	}
 	void clearData ()
-	{
-
-	}
-public:
-	void runSingleOpenCV ()
-	{
-		init();
-		exec();
-		clear();
+	{		
+		m_pp->clear ();
 	}
 };

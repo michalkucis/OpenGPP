@@ -20,6 +20,7 @@
 #include "PostProcessor.h"
 #include "EffectGLImpl.h"
 #include "EffectCLImpl.h"
+#include "SharedObjectsFactory.h"
 
 class FuncFtoFDistortionTest: public FuncFtoF
 {
@@ -53,7 +54,7 @@ public:
 class EffectTestDOFImportance: public EffectDOFImportance
 {
 public:
-	EffectTestDOFImportance (): EffectDOFImportance (5, 0.1f, 1024.0f/768)
+	EffectTestDOFImportance (Ptr<SharedObjectsFactory> sof): EffectDOFImportance (sof, 5, 0.1f, 1024.0f/768)
 	{
 
 	}
@@ -72,7 +73,7 @@ public:
 class EffectTestDOFRegular: public EffectDOFRegular
 {
 public:
-	EffectTestDOFRegular (): EffectDOFRegular (5, 0.1f, 1024.0f/768)
+	EffectTestDOFRegular( Ptr<SharedObjectsFactory> sof ): EffectDOFRegular (sof->getFactoryRGBTexture(), sof->getFactoryRedTexture(), 5, 0.1f, 1024.0f/768)
 	{
 
 	}
@@ -91,7 +92,7 @@ public:
 class EffectTestDOFDistribution: public EffectCLDOFDistribution
 {
 public:
-	EffectTestDOFDistribution(): EffectCLDOFDistribution(1024.0f/768)
+	EffectTestDOFDistribution(Ptr<SharedObjectsFactory> sof): EffectCLDOFDistribution(sof->getFactoryRGBTexture(), sof->getFactoryRedTexture(), 1024.0f/768)
 	{
 
 	}
@@ -114,10 +115,12 @@ class ApplicationPP: public Application
 public:
 	ApplicationPP (): Application(1280,720*4/3)
 	{
-
+		m_sof = new SharedObjectsFactory(uint2(1024,768));
 	}
 private:
-	Renderer m_renderer;
+	//Renderer m_renderer;
+
+	Ptr<SharedObjectsFactory> m_sof;
 	PostProcessor m_ppWebcam;
 	PostProcessor m_ppWithDepth;
 	PostProcessor m_ppWithDepthAndEnvMap;
@@ -128,27 +131,27 @@ public:
 		m_ppWebcam.m_input = new InputLoadFromVideoDeviceOpenCV(0);
 		m_ppWebcam.m_vecEffects.pushBack(Ptr<Effect>(new EffectRenderToScreen(SCREEN_REGION(0,0))));
 		Ptr<FuncFtoF> func = new FuncFtoFDistortionTest (0.9f);
-		m_ppWebcam.m_vecEffects.pushBack(Ptr<Effect>(new EffectDistortionGrid(uint2(10),func)));
+		m_ppWebcam.m_vecEffects.pushBack(Ptr<Effect>(new EffectDistortionGrid(m_sof, uint2(10),func)));
 		m_ppWebcam.m_vecEffects.pushBack(Ptr<Effect>(new EffectRenderToScreen(SCREEN_REGION(1,0))));
 
 		m_ppWebcam.m_vecEffects.pushBack(Ptr<Effect>(new EffectLoadInput(m_ppWebcam.m_input)));
-		m_ppWebcam.m_vecEffects.pushBack(Ptr<Effect>(new EffectVignettingImageFile("vignettingMask.jpg", false)));
+		m_ppWebcam.m_vecEffects.pushBack(Ptr<Effect>(new EffectVignettingImageFile(m_sof, "vignettingMask.jpg", false)));
 		m_ppWebcam.m_vecEffects.pushBack(Ptr<Effect>(new EffectRenderToScreen(SCREEN_REGION(2,0))));
 
 		m_ppWebcam.m_vecEffects.pushBack(Ptr<Effect>(new EffectLoadInput(m_ppWebcam.m_input)));
 		Ptr<FuncFtoF> func2 = new FuncFtoFVignettingTest (1); 
-		m_ppWebcam.m_vecEffects.pushBack(Ptr<Effect>(new EffectVignettingImageFunc(uint2(128,128), func2, false)));
+		m_ppWebcam.m_vecEffects.pushBack(Ptr<Effect>(new EffectVignettingImageFunc(m_sof, uint2(128,128), func2, false)));
 		m_ppWebcam.m_vecEffects.pushBack(Ptr<Effect>(new EffectRenderToScreen(SCREEN_REGION(3,0))));
 
 		m_ppWebcam.m_vecEffects.pushBack(Ptr<Effect>(new EffectLoadInput(m_ppWebcam.m_input)));
-		EffectChromaticAberration* effectChromAber = new EffectChromaticAberration;
+		EffectChromaticAberration* effectChromAber = new EffectChromaticAberration (m_sof);
 		effectChromAber->setGrid(0, uint2(10,10), new FuncFtoFDistortionTest (0.9f));
 		effectChromAber->setGrid(2, uint2(10,10), new FuncFtoFDistortionTest (1.1f));
 		m_ppWebcam.m_vecEffects.pushBack(Ptr<Effect>(effectChromAber));
 		m_ppWebcam.m_vecEffects.pushBack(Ptr<Effect>(new EffectRenderToScreen(SCREEN_REGION(0,1))));
 
 		m_ppWebcam.m_vecEffects.pushBack(Ptr<Effect>(new EffectLoadInput(m_ppWebcam.m_input)));
-		m_ppWebcam.m_vecEffects.pushBack(Ptr<Effect>(new EffectNoiseUniform));
+		m_ppWebcam.m_vecEffects.pushBack(Ptr<Effect>(new EffectNoiseUniform (m_sof)));
 		m_ppWebcam.m_vecEffects.pushBack(Ptr<Effect>(new EffectRenderToScreen(SCREEN_REGION(1,1))));
 
 //		m_inputs[3] = new InputLoadFromSingleFileOpenEXR("exrChangeLightIntensity\\img_light1_lamp0_pos0.exr");
@@ -158,27 +161,27 @@ public:
 
 		m_ppWithDepth.m_input = m_inputs[0];
 		m_ppWithDepth.m_vecEffects.pushBack(Ptr<Effect>(new EffectRenderToScreen(SCREEN_REGION(2,1))));
-		m_ppWithDepth.m_vecEffects.pushBack(Ptr<Effect>(new EffectBrightnessAdapter));
+		m_ppWithDepth.m_vecEffects.pushBack(Ptr<Effect>(new EffectBrightnessAdapter(m_sof)));
 		m_ppWithDepth.m_vecEffects.pushBack(Ptr<Effect>(new EffectRenderToScreen(SCREEN_REGION(3,1))));
 
 		m_ppWithDepth.m_vecEffects.pushBack(Ptr<Effect>(new EffectLoadInput(m_inputs[1])));
-		m_ppWithDepth.m_vecEffects.pushBack(Ptr<Effect>(new EffectMotionBlurSimple(float3(0,0,0), float2(10,10), 8)));
+		m_ppWithDepth.m_vecEffects.pushBack(Ptr<Effect>(new EffectMotionBlurSimple(m_sof, float3(0,0,0), float2(10,10), 8)));
 		m_ppWithDepth.m_vecEffects.pushBack(Ptr<Effect>(new EffectRenderToScreen(SCREEN_REGION(0,2))));
 		m_ppWithDepth.m_vecEffects.pushBack(Ptr<Effect>(new EffectLoadInput(m_inputs[1])));
-		m_ppWithDepth.m_vecEffects.pushBack(Ptr<Effect>(new EffectMotionBlur2Phases(float3(0,0,0), float2(10,10), 4, 4)));
+		m_ppWithDepth.m_vecEffects.pushBack(Ptr<Effect>(new EffectMotionBlur2Phases(m_sof, float3(0,0,0), float2(10,10), 4, 4)));
 		m_ppWithDepth.m_vecEffects.pushBack(Ptr<Effect>(new EffectRenderToScreen(SCREEN_REGION(1,2))));
 
 		m_ppWithDepth.m_vecEffects.pushBack(Ptr<Effect>(new EffectLoadInput(m_inputs[1])));
-		m_ppWithDepth.m_vecEffects.pushBack(Ptr<Effect>(new EffectTestDOFRegular));
+		m_ppWithDepth.m_vecEffects.pushBack(Ptr<Effect>(new EffectTestDOFRegular (m_sof)));
 		m_ppWithDepth.m_vecEffects.pushBack(Ptr<Effect>(new EffectRenderToScreen(SCREEN_REGION(2,2))));
 
 		m_ppWithDepth.m_vecEffects.pushBack(Ptr<Effect>(new EffectLoadInput(m_inputs[1])));
-		m_ppWithDepth.m_vecEffects.pushBack(Ptr<Effect>(new EffectTestDOFImportance));
+		m_ppWithDepth.m_vecEffects.pushBack(Ptr<Effect>(new EffectTestDOFImportance(m_sof)));
 		m_ppWithDepth.m_vecEffects.pushBack(Ptr<Effect>(new EffectRenderToScreen(SCREEN_REGION(3,2))));
 
 		m_ppWithDepth.m_vecEffects.pushBack(Ptr<Effect>(new EffectLoadInput(m_inputs[1])));
-		m_ppWithDepth.m_vecEffects.pushBack(Ptr<Effect>(new EffectResizeImages));
-		m_ppWithDepth.m_vecEffects.pushBack(Ptr<Effect>(new EffectTestDOFDistribution));	
+		m_ppWithDepth.m_vecEffects.pushBack(Ptr<Effect>(new EffectResizeImages(m_sof)));
+		m_ppWithDepth.m_vecEffects.pushBack(Ptr<Effect>(new EffectTestDOFDistribution(m_sof)));	
 		m_ppWithDepth.m_vecEffects.pushBack(Ptr<Effect>(new EffectRenderToScreen(SCREEN_REGION(3,3))));	
 	
 		Ptr<Input> inputWithEnvMap = new InputLoadFromSingleFileWithEnvMapOpenEXR(
@@ -188,12 +191,12 @@ public:
 
 		m_ppWithDepthAndEnvMap.m_vecEffects.pushBack(Ptr<Effect>(new EffectRenderToScreen(SCREEN_REGION(0,3))));	
 		m_ppWithDepthAndEnvMap.m_vecEffects.pushBack(Ptr<Effect>(
-			new EffectLensFlareStarFromSimple<512,512, true>(new EffectCLObjectsFactory)));
+			new EffectLensFlareStarFromSimple(m_sof,512,512, true, new EffectCLObjectsFactory)));
 		m_ppWithDepthAndEnvMap.m_vecEffects.pushBack(Ptr<Effect>(new EffectRenderToScreen(SCREEN_REGION(1,3))));	
 
 		m_ppWithDepthAndEnvMap.m_vecEffects.pushBack(Ptr<Effect>(new EffectLoadInput(inputWithEnvMap)));	
-		EffectLensFlareStarFromEnvMap<512,512, true>* effect = 
-			new EffectLensFlareStarFromEnvMap<512,512, true>(new EffectCLObjectsFactory);
+		EffectLensFlareStarFromEnvMap* effect =	new EffectLensFlareStarFromEnvMap
+			(m_sof, 512,512, true, new EffectCLObjectsFactory);
 		effect->setLensFlareMult(5);
 		m_ppWithDepthAndEnvMap.m_vecEffects.pushBack(Ptr<Effect>(effect));
 		m_ppWithDepthAndEnvMap.m_vecEffects.pushBack(Ptr<Effect>(new EffectRenderToScreen(SCREEN_REGION(2,3))));	
@@ -220,7 +223,6 @@ public:
 	{
 		m_ppWebcam.clear ();
 		m_ppWithDepth.clear ();
-		m_renderer.clear ();
 		for (int i = 0; i < 4; i++)
 			m_inputs[i] = Ptr<Input>();
 		checkGLError();

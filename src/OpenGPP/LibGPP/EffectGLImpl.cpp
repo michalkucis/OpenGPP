@@ -152,6 +152,18 @@ EffectDistortionGrid::EffectDistortionGrid (Ptr<GLTexturesRGBFactory> factoryRGB
 	setGrid(mat);
 }
 
+EffectDistortionGrid::EffectDistortionGrid( Ptr<SharedObjectsFactory> sof, Matrix<float2>& grid ):
+	EffectGL(sof->getFactoryRGBTexture(), sof->getFactoryRedTexture())
+{
+	setGrid(grid);
+}
+
+EffectDistortionGrid::EffectDistortionGrid( Ptr<SharedObjectsFactory> sof, uint2 gridResolution, Ptr<FuncFtoF> func ):
+	EffectGL(sof->getFactoryRGBTexture(), sof->getFactoryRedTexture())
+{
+	setGrid(gridResolution, func);
+}
+
 EffectDistortionGrid::EffectDistortionGrid (Ptr<GLTexturesRGBFactory> factoryRGB, Ptr<GLTexturesRedFactory> factoryRed, Matrix<float2>& grid):
 	EffectGL(factoryRGB, factoryRed)
 {
@@ -232,6 +244,22 @@ public:
 			glDisable(FUNC);
 	}
 };
+
+EffectChromaticAberration::EffectChromaticAberration(Ptr<SharedObjectsFactory> sof): 
+	m_programRed ("", "shaders\\distortionGridRed.fs"),
+	m_programGreen ("", "shaders\\distortionGridGreen.fs"),
+	m_programBlue ("", "shaders\\distortionGridBlue.fs"),
+	EffectGL(sof->getFactoryRGBTexture(), sof->getFactoryRedTexture())
+{
+	Matrix<float2> mat (uint2(2,2));
+	mat[0][0] = float2(-1,-1);
+	mat[0][1] = float2(-1,+1);
+	mat[1][0] = float2(+1,-1);
+	mat[1][1] = float2(+1,+1);
+	setGrid(0, mat);
+	setGrid(1, mat);
+	setGrid(2, mat);
+}
 
 EffectChromaticAberration::EffectChromaticAberration(Ptr<GLTexturesRGBFactory> factoryRGB, Ptr<GLTexturesRedFactory> factoryRed): 
 	m_programRed ("", "shaders\\distortionGridRed.fs"),
@@ -333,6 +361,16 @@ Ptr<GLTexture2D> EffectChromaticAberration::processDepth( Ptr<GLTexture2D> depth
 	return texTarget;
 }
 
+EffectVignettingImageFile::EffectVignettingImageFile(Ptr<SharedObjectsFactory> sof, string filename, bool dynamicLoaded ) : 
+	EffectGL(sof),
+	m_program("", "shaders\\vignettingImage.fs")
+{
+	m_filename = filename;
+	m_dynamicLoaded = dynamicLoaded;
+	if (! m_dynamicLoaded)
+		m_texLoaded = loadTextureFromFile(m_filename); 
+}
+
 EffectVignettingImageFile::EffectVignettingImageFile(Ptr<GLTexturesRGBFactory> factoryRGB, Ptr<GLTexturesRedFactory> factoryRed, string filename, bool dynamicLoaded ) : 
 	EffectGL(factoryRGB, factoryRed),
 	m_program("", "shaders\\vignettingImage.fs")
@@ -388,6 +426,24 @@ Ptr<GLTexture2D> EffectVignettingImageFunc::createTexture (uint2 resolution, Ptr
 	Visitor2WriteRGBByFuncFtoF visitor(resolution, func);
 	tex->visitWriteOnly(&visitor);
 	return tex;
+}
+
+EffectVignettingImageFunc::EffectVignettingImageFunc(Ptr<SharedObjectsFactory> sof, 
+	uint2 resolution, Ptr<FuncFtoF> func, bool dynamicLoaded ) :
+	EffectGL(sof),
+	m_program("", "shaders\\vignettingImage.fs")
+{
+	m_dynamicLoaded = dynamicLoaded;
+	m_resolution = resolution;
+	if (m_dynamicLoaded)
+	{
+		m_func = func;
+		m_resolution = resolution;
+	}
+	else
+	{
+		m_texLoaded = createTexture(resolution, func);
+	}
 }
 
 EffectVignettingImageFunc::EffectVignettingImageFunc(Ptr<GLTexturesRGBFactory> factoryRGB,  Ptr<GLTexturesRedFactory> factoryRed, 
@@ -451,7 +507,7 @@ string EffectVignettingFunc::createTextSource( Ptr<FuncFtoF> func )
 	ss << 
 		"uniform sampler2D tex;\n"
 		"\n"
-		"float radialDist (float x)\n"
+		"float mask (float x)\n"
 		"{\n"
 		"  float y;\n"
 		"  " << func->getString() << ";\n"
@@ -461,16 +517,26 @@ string EffectVignettingFunc::createTextSource( Ptr<FuncFtoF> func )
 		"void main ()\n"
 		"{\n"
 		"  vec4 color = texture2D(tex, gl_TexCoord[0].st);\n"
-		"  gl_FragColor = vec4(0,0,color.b,0);\n"
+		"  vec2 coord = {gl_TexCoord[0].s, gl_TexCoord[0].t};\n"
+		"  coord = coord * 2 - 1;\n"
+		"  float distance = sqrt(coord.s*coord.s+coord.t*coord.t) / sqrt(2);\n"
+		"  float m = mask(distance);"
+		"  m = m < 0 ? 0 : m;\n"
+		"  gl_FragColor = color * m;\n"
 		"}\n";
 	string str = ss.str();
-	std::cout << str;
+	//std::cout << str;
 	return str;
 }
 
+EffectVignettingFunc::EffectVignettingFunc(Ptr<SharedObjectsFactory> sof, Ptr<FuncFtoF> func ): 
+	EffectGL(sof->getFactoryRGBTexture(), sof->getFactoryRedTexture()),
+	m_program(true, "", createTextSource(func))
+{
+}
 
 EffectVignettingFunc::EffectVignettingFunc(Ptr<GLTexturesRGBFactory> factoryRGB,  Ptr<GLTexturesRedFactory> factoryRed, Ptr<FuncFtoF> func ): 
-	EffectGL(factoryRGB, factoryRed),
+EffectGL(factoryRGB, factoryRed),
 	m_program(true, "", createTextSource(func))
 {
 }
@@ -478,7 +544,24 @@ EffectVignettingFunc::EffectVignettingFunc(Ptr<GLTexturesRGBFactory> factoryRGB,
 
 Ptr<GLTexture2D> EffectVignettingFunc::process( Ptr<GLTexture2D> tex, Ptr<GLTexture2D> depth, Ptr<GLTextureEnvMap> envMap )
 {
-	return tex;
+	Ptr<GLTexture2D> texTarget = m_factoryTexRGB->createProduct();
+	Ptr<GLFramebuffer> framebufferTarget = m_factoryFramebuffers->createProduct();
+	glEnable(GL_TEXTURE_2D);
+	glActiveTexture(GL_TEXTURE0);
+	tex->bind();
+	GLSaveViewport savedViewport (texTarget->getResolution());
+	framebufferTarget->setColor(texTarget);
+	framebufferTarget->bind();
+
+	m_program.use();
+
+	drawQuad();
+	glUseProgram(0);
+
+	framebufferTarget->unbind();
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	return texTarget;
 }
 
 
@@ -521,6 +604,13 @@ float EffectBrightnessAdapter::computeBrightness( float3 color )
 	return (color.x + color.y + color.z) / 3;
 }
 
+EffectBrightnessAdapter::EffectBrightnessAdapter(Ptr<SharedObjectsFactory> sof, PIDController& pid ) : 
+	EffectGL(sof),
+	m_program("", "shaders\\imageMult.fs"),
+	m_pid(new PIDController(pid))
+{
+}
+
 EffectBrightnessAdapter::EffectBrightnessAdapter(Ptr<GLTexturesRGBFactory> factoryRGB,  Ptr<GLTexturesRedFactory> factoryRed, PIDController& pid ) : 
 	EffectGL(factoryRGB, factoryRed),
 	m_program("", "shaders\\imageMult.fs"),
@@ -554,6 +644,15 @@ Ptr<GLTexture2D> EffectBrightnessAdapter::process( Ptr<GLTexture2D> tex, Ptr<GLT
 	tex->unbind();
 	framebufferTarget->unbind();
 	return texTarget;
+}
+
+EffectMotionBlurSimple::EffectMotionBlurSimple(Ptr<SharedObjectsFactory> sof, float3 deltaPos, float2 deltaView, int numSamples ) : 
+	EffectGL(sof->getFactoryRGBTexture(), sof->getFactoryRedTexture()),
+	m_program("", "shaders\\motionBlur.fs")
+{
+	m_numSamples = numSamples;
+	m_deltaPos = deltaPos;
+	m_deltaView = deltaView;
 }
 
 EffectMotionBlurSimple::EffectMotionBlurSimple(Ptr<GLTexturesRGBFactory> factoryRGB,  Ptr<GLTexturesRedFactory> factoryRed,
@@ -600,6 +699,21 @@ Ptr<GLTexture2D> EffectMotionBlurSimple::process( Ptr<GLTexture2D> tex, Ptr<GLTe
 	return texTarget;
 }
 
+EffectMotionBlur2Phases::EffectMotionBlur2Phases(Ptr<SharedObjectsFactory> sof,
+	float3 deltaPos, float2 deltaView, int numSamples1Phase, int numSamples2Phase ): 
+EffectGL(sof->getFactoryRGBTexture(), sof->getFactoryRedTexture()),
+	m_effect1st(sof->getFactoryRGBTexture(), sof->getFactoryRedTexture(),
+	deltaPos/(numSamples2Phase+1.0f), 
+	deltaView/(numSamples2Phase+1.0f), 
+	numSamples1Phase),
+	m_effect2nd(sof->getFactoryRGBTexture(), sof->getFactoryRedTexture(),
+	deltaPos*(numSamples2Phase-1.0f)/(float)numSamples2Phase, 
+	deltaView*(numSamples2Phase-1.0f)/(float)numSamples2Phase, 
+	numSamples2Phase)
+{
+
+}
+
 EffectMotionBlur2Phases::EffectMotionBlur2Phases(Ptr<GLTexturesRGBFactory> factoryRGB,  Ptr<GLTexturesRedFactory> factoryRed,
 	float3 deltaPos, float2 deltaView, int numSamples1Phase, int numSamples2Phase ): 
 	EffectGL(factoryRGB, factoryRed),
@@ -620,6 +734,14 @@ Ptr<GLTexture2D> EffectMotionBlur2Phases::process( Ptr<GLTexture2D> tex, Ptr<GLT
 	tex = m_effect1st.process(tex,depth, envMap);
 	tex = m_effect2nd.process(tex,depth, envMap);
 	return tex;
+}
+
+EffectNoiseUniform::EffectNoiseUniform(Ptr<SharedObjectsFactory> sof, float begin, float end) : 
+	EffectGL(sof->getFactoryRGBTexture(), sof->getFactoryRedTexture()),
+	m_program("", "shaders\\noiseUniform.fs")
+{
+	m_mappingBegin = begin;
+	m_mappingSize = end - begin;
 }
 
 EffectNoiseUniform::EffectNoiseUniform(Ptr<GLTexturesRGBFactory> factoryRGB,  Ptr<GLTexturesRedFactory> factoryRed, float begin, float end) : 
@@ -657,6 +779,22 @@ Ptr<GLTexture2D> EffectNoiseUniform::process( Ptr<GLTexture2D> tex, Ptr<GLTextur
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	return texTarget;
+}
+
+EffectNoiseEmva::EffectNoiseEmva(Ptr<SharedObjectsFactory> sof,
+	float fItoP, float totalQuantumEfficiently, float readNoise, float darkCurrent, float inverseOfOverallSystemGain, 
+	int saturationCapacity, float expositionTime, float fDNtoI) : 
+EffectGL(sof->getFactoryRGBTexture(), sof->getFactoryRedTexture()),
+	m_program("", "shaders\\noiseEmva.fs")
+{
+	m_fItoP = fItoP;
+	m_totalQuantumEfficiently = totalQuantumEfficiently;
+	m_readNoise = readNoise;
+	m_darkCurrent = darkCurrent;
+	m_inverseOfOverallSystemGain = inverseOfOverallSystemGain; 
+	m_expositionTime = expositionTime;
+	m_fDNtoI = fDNtoI;
+	m_saturationCapacity = saturationCapacity;
 }
 
 EffectNoiseEmva::EffectNoiseEmva(Ptr<GLTexturesRGBFactory> factoryRGB,  Ptr<GLTexturesRedFactory> factoryRed,
@@ -710,6 +848,11 @@ Ptr<GLTexture2D> EffectNoiseEmva::process( Ptr<GLTexture2D> tex, Ptr<GLTexture2D
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	return texTarget;
+}
+
+EffectResizeImages::EffectResizeImages(Ptr<SharedObjectsFactory> sof):
+	EffectGL(sof->getFactoryRGBTexture(), sof->getFactoryRedTexture())
+{
 }
 
 EffectResizeImages::EffectResizeImages(Ptr<GLTexturesRGBFactory> factoryRGB,  Ptr<GLTexturesRedFactory> factoryRed):
@@ -784,6 +927,14 @@ void EffectDOFDrawQuad::unbindTexture( GLenum nTex )
 	glActiveTexture(nTex);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glDisable(GL_TEXTURE_2D);
+}
+
+EffectDOFCircleOfConfusionInternal::EffectDOFCircleOfConfusionInternal(Ptr<SharedObjectsFactory> sof, string fragmentShaderFilename ) : 
+EffectDOFDrawQuad(sof->getFactoryRGBTexture(), sof->getFactoryRedTexture()),
+	m_func (1.77f, 3, 48, 42, 0.01f),
+	m_program("", fragmentShaderFilename)
+{
+
 }
 
 EffectDOFCircleOfConfusionInternal::EffectDOFCircleOfConfusionInternal(
@@ -886,6 +1037,13 @@ protected:
 	}
 };
 
+EffectDOFRegular::EffectDOFRegular(Ptr<SharedObjectsFactory> sof, int countSamples, float mult, float aspectRatio ) : 
+	m_dofHor (new EffectDOFRegularHor (sof->getFactoryRGBTexture(), sof->getFactoryRedTexture(), countSamples, mult)), 
+	m_dofVert (new EffectDOFRegularVert (sof->getFactoryRGBTexture(), sof->getFactoryRedTexture(), countSamples, mult * aspectRatio)),
+	EffectDOF(sof->getFactoryRGBTexture(), sof->getFactoryRedTexture())
+{
+
+}
 
 EffectDOFRegular::EffectDOFRegular(Ptr<GLTexturesRGBFactory> factoryRGB, Ptr<GLTexturesRedFactory> factoryRed, 
 		int countSamples, float mult, float aspectRatio ) : 
@@ -964,6 +1122,18 @@ protected:
 		return m_arrOffsets;
 	}
 };
+
+EffectDOFImportance::EffectDOFImportance(
+	Ptr<SharedObjectsFactory> sof, int countSamples, float mult, float aspectRatio ) : 
+
+m_dofHor (new EffectDOFImportanceHor(sof->getFactoryRGBTexture(), sof->getFactoryRedTexture(), countSamples, mult)), 
+	m_dofVert(new EffectDOFImportanceVert(sof->getFactoryRGBTexture(), sof->getFactoryRedTexture(), countSamples, mult * aspectRatio)),
+	EffectDOF(sof->getFactoryRGBTexture(), sof->getFactoryRedTexture())
+{
+	m_actualAspectRatio = aspectRatio;
+	m_mult = mult;
+	m_countSamples = countSamples;
+}
 
 EffectDOFImportance::EffectDOFImportance(
 	Ptr<GLTexturesRGBFactory> factoryRGB, Ptr<GLTexturesRedFactory> factoryRed, 

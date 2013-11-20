@@ -320,5 +320,7 @@ void XMLNode::parseFile(string filename)
 		error0 (ERR_XML, "The XML file cannot be opened");
 
 	xercesc::DOMElement* root = doc->getDocumentElement ();
+	if (! root)
+		error0(ERR_XML, "The XML file is invalid");
 	parseXercescXMLNode(root);
 }

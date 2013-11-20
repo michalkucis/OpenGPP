@@ -3,6 +3,7 @@
 #include "Effect.h"
 #include "GLClasses.h"
 #include "GLClassesFactories.h"
+#include "SharedObjectsFactory.h"
 
 #pragma comment(lib, "OpenGL32.lib")
 #pragma comment(lib, "glew32.lib")
@@ -16,6 +17,13 @@ protected:
 	//Ptr<GLTexturesDepthFactory> m_factoryTexDepth;
 	Ptr<GLFramebufferFactory> m_factoryFramebuffers;
 public:
+	EffectGL (Ptr<SharedObjectsFactory> sof)
+	{				 
+		m_factoryTexRGB = sof->getFactoryRGBTexture(); //new GLTexturesRGBFactory(uint2(256,256));
+		m_factoryTexRed = sof->getFactoryRedTexture(); //new GLTexturesRedFactory(uint2(256,256));
+		m_factoryFramebuffers = new GLFramebufferFactory;
+		//m_factoryTexDepth = new GLTexturesDepthFactory(uint2(1024,768));
+	}
 	EffectGL (Ptr<GLTexturesRGBFactory> factoryRGB, Ptr<GLTexturesRedFactory> factoryRed)
 	{				 
 		m_factoryTexRGB = factoryRGB; //new GLTexturesRGBFactory(uint2(256,256));

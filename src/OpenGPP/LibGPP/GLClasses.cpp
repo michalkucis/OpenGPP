@@ -288,7 +288,7 @@ void GLFramebuffer::unbind()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
 	checkGLError ();
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, 0, 0);
 	checkGLError ();
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, 0);
 	checkGLError ();
