@@ -1,7 +1,16 @@
 #include <opencv/highgui.h>
-#include <ffopencv\ffopencv.h>
+//#include <ffopencv\ffopencv.h>
 
-#include <gl\GL.h>
+#pragma comment(lib, "cv210d.lib")
+#pragma comment(lib, "cvaux210d.lib")
+#pragma comment(lib, "cvhaartraining210d.lib")
+#pragma comment(lib, "cxcore210d.lib")
+#pragma comment(lib, "cxts210d.lib")
+#pragma comment(lib, "highgui210d.lib")
+#pragma comment(lib, "ml210d.lib") 
+
+#include <windows.h>
+#include <gl/GL.h>
 #include "EffectImplOpenCV.h"
 #include "Error.h"
 #include <ImathBox.h>
@@ -51,7 +60,12 @@ Ptr<GLTexture2D> EffectSaveToSingleFileOpenCV::process( Ptr<GLTexture2D> tex, Pt
 	Visitor2ReadUchar3RGBToCvMat visitor(mat);
 	tex->visitReadOnly(&visitor);
 
-	cv::imwrite (m_filename, mat);
+	//cv::imwrite (m_filename, mat);
+	try {
+		cv::imwrite (m_filename, mat);
+	} catch (cv::Exception& ex) {
+		printf("");
+	}
 	return tex;
 }
 
@@ -95,57 +109,57 @@ EffectSaveToVideoFileOpenCV::EffectSaveToVideoFileOpenCV( string filename, float
 
 EffectSaveToVideoFileOpenCV::~EffectSaveToVideoFileOpenCV()
 {
-	if(m_writer)
-		cvReleaseVideoWriter_FFMPEG(&m_writer);
+	//if(m_writer)
+	//	cvReleaseVideoWriter_FFMPEG(&m_writer);
 }
 
 Ptr<GLTexture2D> EffectSaveToVideoFileOpenCV::process( Ptr<GLTexture2D> tex, Ptr<GLTexture2D> depth, Ptr<GLTextureEnvMap> envMap)
 {
-	try 
-	{
-		glFinish();
-	
-		int width = tex->getResolution().x;
-		int height = tex->getResolution().y;
-	
-		cv::Mat mat (height, width, CV_8UC3);
-		Visitor2ReadUchar3RGBToCvMat visitor(mat);
-		tex->visitReadOnly(&visitor);
-	
-		if (width % 2)
-			width--;
-		if (height % 2)
-			height--;
-		if (! m_writer)
-		{
-			int fourCC = CV_FOURCC(m_fourcc[0], m_fourcc[1], m_fourcc[2], m_fourcc[3]);
-			cv::Size frameSize (width, height);
-			m_writer = cvCreateVideoWriter_FFMPEG(m_filename.c_str(),
-				fourCC, m_fps, frameSize, true);
-			if (! m_writer)
-				error0 (ERR_OPENCV, "Video cannot be created");
-		}
-	
-		CvSize sizeFrame = cvSize(width, height);
-		IplImage* iplimage = cvCreateImage (sizeFrame, IPL_DEPTH_8U, 3);
-		for (int y = 0; y < height; y++)
-			for (int x = 0; x < width; x++)
-			{
-				uchar3& out = CV_IMAGE_ELEM (iplimage, uchar3, y, x);
-				cv::Vec3b& in = mat.at<cv::Vec3b> (y, x);
-				out.x = (uchar) in[0];
-				out.y = (uchar) in[1];
-				out.z = (uchar) in[2];
-				//out.x = 0;
-				//out.y = 0;
-				//out.z = 0;
-			}
-		for (int i = 0; i < m_repeatFrame; i++)
-			cvWriteFrame_FFMPEG (m_writer, iplimage);
-		cvReleaseImage(&iplimage);
-	} catch (cv::Exception& ex) {
-		error1(ERR_OPENCV, "OpenCV error: %s", ex.what());
-	}
+	//try 
+	//{
+	//	glFinish();
+	//
+	//	int width = tex->getResolution().x;
+	//	int height = tex->getResolution().y;
+	//
+	//	cv::Mat mat (height, width, CV_8UC3);
+	//	Visitor2ReadUchar3RGBToCvMat visitor(mat);
+	//	tex->visitReadOnly(&visitor);
+	//
+	//	if (width % 2)
+	//		width--;
+	//	if (height % 2)
+	//		height--;
+	//	if (! m_writer)
+	//	{
+	//		int fourCC = CV_FOURCC(m_fourcc[0], m_fourcc[1], m_fourcc[2], m_fourcc[3]);
+	//		cv::Size frameSize (width, height);
+	//		m_writer = cvCreateVideoWriter_FFMPEG(m_filename.c_str(),
+	//			fourCC, m_fps, frameSize, true);
+	//		if (! m_writer)
+	//			error0 (ERR_OPENCV, "Video cannot be created");
+	//	}
+	//
+	//	CvSize sizeFrame = cvSize(width, height);
+	//	IplImage* iplimage = cvCreateImage (sizeFrame, IPL_DEPTH_8U, 3);
+	//	for (int y = 0; y < height; y++)
+	//		for (int x = 0; x < width; x++)
+	//		{
+	//			uchar3& out = CV_IMAGE_ELEM (iplimage, uchar3, y, x);
+	//			cv::Vec3b& in = mat.at<cv::Vec3b> (y, x);
+	//			out.x = (uchar) in[0];
+	//			out.y = (uchar) in[1];
+	//			out.z = (uchar) in[2];
+	//			//out.x = 0;
+	//			//out.y = 0;
+	//			//out.z = 0;
+	//		}
+	//	for (int i = 0; i < m_repeatFrame; i++)
+	//		cvWriteFrame_FFMPEG (m_writer, iplimage);
+	//	cvReleaseImage(&iplimage);
+	//} catch (cv::Exception& ex) {
+	//	error1(ERR_OPENCV, "OpenCV error: %s", ex.what());
+	//}
 	
 	return tex;
 }

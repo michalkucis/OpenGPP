@@ -95,15 +95,15 @@
   </noise>
   
   <outputFile name="sequence" type="sequenceLDR">
-    <image filename="out_%d.jpg"/>
+    <image filename="out_%d.png"/>
     <sequence start="1" step="1"/>
   </outputFile>
   
   <effects name="all">    
-    <!-- <chromaticAberration name="radialPolynomial"/>
+    <chromaticAberration name="radialPolynomial"/>
     <vignetting name="func"/>
     <noise name="emva"/>
-    -->
+ 
     <outputScreen name="fullscreen"/>
     <outputFile name="sequence"/>
   </effects>

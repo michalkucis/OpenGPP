@@ -17,6 +17,10 @@
 #include "VisitorsImpl.h"
 #include "XML.h"
 
+
+
+
+/*
 #pragma comment(lib, "avutil.lib")
 #pragma comment(lib, "avcodec.lib")
 #pragma comment(lib, "avformat.lib")
@@ -27,3 +31,4 @@
 #pragma comment(lib, "cxcore210d.lib")
 #pragma comment(lib, "cvaux210d.lib")
 #pragma comment(lib, "highgui210d.lib")
+*/

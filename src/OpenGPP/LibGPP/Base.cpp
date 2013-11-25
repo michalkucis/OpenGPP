@@ -1,6 +1,13 @@
 #include "Base.h"
 
-
+#pragma comment(lib, "cv210d.lib")
+#pragma comment(lib, "cvaux210d.lib")
+#pragma comment(lib, "cvhaartraining210d.lib")
+#pragma comment(lib, "cxcore210d.lib")
+#pragma comment(lib, "cxts210d.lib")
+#pragma comment(lib, "highgui210d.lib")
+#pragma comment(lib, "ml210d.lib") 
+//#pragma comment(lib, "opencv_ffmpeg210d.lib")
 
 
 #pragma warning(disable : 4996)

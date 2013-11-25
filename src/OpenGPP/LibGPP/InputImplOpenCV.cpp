@@ -175,7 +175,7 @@ void InputLoadFromSingleFileOpenCV::init()
 	if (! m_texColor.isNull())
 		error(ERR_STRUCT);
 
-	cv::Mat mat = cv::imread(m_filename);
+	cv::Mat mat = cvLoadImage(m_filename.c_str());
 	if (mat.data==NULL)
 		error1(ERR_STRUCT, "File '%s' cannot be opened", m_filename.c_str());
 	m_texColor = createTextureFromMat<GLTexture2D>(mat, GL_RGB, GL_RGB, m_interp, m_size);

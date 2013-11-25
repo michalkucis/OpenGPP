@@ -14,6 +14,7 @@
 #include "EffectGLImpl.h"
 #include "EffectCL.h"
 #include "EffectCLImpl.h"
+#include "PostProcessor.h"
 
 
 class FuncFtoFPolynomial: public FuncFtoF
