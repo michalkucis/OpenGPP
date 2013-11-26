@@ -8,13 +8,7 @@
 /src/OpenGPP-0.1.0/ipch/
 /src/OpenGPP/ipch
 /src/OpenGPP/**/Debug/
-/src/OpenGPP/**/Release/
-/bin/output/
-/bin/exrChangeLightIntensity/
-/bin/exrMovingLight/
-/bin/exrReposition/
-/bin/exrReposition2/
-/bin/exrSingle/
+/src/OpenGPP/**/Release/s
 /src/OpenGPP/Data/out*
 
 # generated files
