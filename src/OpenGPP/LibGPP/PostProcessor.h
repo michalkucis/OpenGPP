@@ -3,10 +3,31 @@
 #include "Input.h"
 #include "Effect.h"
 #include "Vector.h"
+#include "GLClassesFactories.h"
+#include "SharedObjectsFactory.h"
 
 class PostProcessor
-{
+{	
+protected:
+	Ptr<GLTexturesRGBFactory> m_factoryTexRGB;
+	Ptr<GLTexturesRedFactory> m_factoryTexRed;
 public:
+	PostProcessor (Ptr<GLTexturesRGBFactory> factoryRGB, Ptr<GLTexturesRedFactory> factoryRed)
+	{
+		m_factoryTexRGB = factoryRGB;
+		m_factoryTexRed = factoryRed;
+	}
+	PostProcessor (Ptr<SharedObjectsFactory> sof)
+	{
+		m_factoryTexRGB = sof->getFactoryRGBTexture();
+		m_factoryTexRed = sof->getFactoryRedTexture();
+	}
+	PostProcessor (uint2 res)
+	{
+		Ptr<SharedObjectsFactory> sof = new SharedObjectsFactory(res);
+		m_factoryTexRGB = sof->getFactoryRGBTexture();
+		m_factoryTexRed = sof->getFactoryRedTexture();
+	}
 	Ptr<Input> m_input;
 	Vector<Ptr<Effect>> m_vecEffects;
 	void clear ()

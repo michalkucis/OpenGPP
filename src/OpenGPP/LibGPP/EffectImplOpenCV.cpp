@@ -8,6 +8,7 @@
 #pragma comment(lib, "cxts210d.lib")
 #pragma comment(lib, "highgui210d.lib")
 #pragma comment(lib, "ml210d.lib") 
+#pragma comment(lib, "opencv_ffmpeg210d.lib")
 
 #include <windows.h>
 #include <gl/GL.h>

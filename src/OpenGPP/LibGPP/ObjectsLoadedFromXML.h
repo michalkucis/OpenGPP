@@ -15,53 +15,9 @@
 #include "EffectCL.h"
 #include "EffectCLImpl.h"
 #include "PostProcessor.h"
+#include "FuncImpl.h"
 
 
-class FuncFtoFPolynomial: public FuncFtoF
-{
-	Vector<float> m_constants;
-public:
-	FuncFtoFPolynomial(Ptr<XMLNode> nodeFunc)
-	{
-		string type = nodeFunc->getAttrString("type");
-		if(type != "polynomial")
-			error0(ERR_XML, "Invalid type of the xml <func>");
-		Vector<Ptr<XMLNode>> nodeValues = nodeFunc->getVecNodes("value");
-		for (int i = (int) nodeValues.getSize()-1; i >= 0; i--)
-		{
-			Ptr<XMLNode> node = nodeValues[i];
-			float value = node->getAttrFloat("x");
-			m_constants.pushBack(value);
-		}
-	}
-	float operator()(float x)
-	{
-		float y = 0;
-		float value = 1;
-		for (uint i = 0; i < m_constants.getSize(); i++)
-		{
-			y += m_constants[i] * value;
-			value *= x;
-		}
-		return y;
-	}
-	string getString(string strResult = "y", string strInput = "x")
-	{
-		std::stringstream ss;
-		ss << strResult << " = ";
-		for (uint i = 0; i < m_constants.getSize(); i++)
-		{
-			if (i!=0)
-				ss << " + ";
-			float c = m_constants[i];
-			string strC = float2str(c);
-			ss << strC;
-			for (uint j = i+1; j < m_constants.getSize(); j++)
-				ss << "*" << strInput;
-		}
-		return ss.str();
-	}
-};
 
 class ObjectsLoadedFromXML
 {
@@ -689,7 +645,6 @@ class ObjectsLoadedFromXML
 		Ptr<XMLNode> nodeEffects = nodeRoot->getNode("effects", "name", effectsName);
 		Vector<Ptr<XMLNode>> effects = nodeEffects->getVecNodes();
 
-		vecEffects.pushBack(new EffectResizeImages(m_factoryRGB, m_factoryRed));
 		for(uint i = 0; i < effects.getSize(); i++)
 		{
 			Ptr<XMLNode> node = effects[i];
@@ -719,7 +674,7 @@ public:
 		m_factoryRGB = new GLTexturesRGBFactory(ppResolution);
 		m_factoryRed = new GLTexturesRedFactory(ppResolution);
 
-		m_pp = new PostProcessor;
+		m_pp = new PostProcessor(ppResolution);
 		m_pp->m_input = getInput(nodeRoot, strInput);
 		m_pp->m_vecEffects = getVecEffects(nodeRoot, strEffects);
 	}

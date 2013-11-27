@@ -5,7 +5,7 @@ class AppInputTest: public AppTest, public UnitTest
 {
 	Ptr<SharedObjectsFactory> m_sof;
 public:
-	AppInputTest (string testName, int countRenders = 1): UnitTest (testName), m_sof(new SharedObjectsFactory(1024,768))
+	AppInputTest (string testName, int countRenders = 1): UnitTest (testName), m_sof(new SharedObjectsFactory(uint2(1024,768)))
 	{
 		//m_countRenders = countRenders;
 	}
@@ -72,7 +72,7 @@ public:
 	AppInputLoadFromSequenceOpenEXR (): AppInputTest ("InputLoadFromSequenceOpenEXR") {}
 	Ptr<Input> createInput ()
 	{
-		return new InputLoadFromSequence<InputLoadFromSingleFileOpenEXR>(GeneratorOfInputSequenceFilenames (m_sof, "img_movingscene_",".exr",0,3,1));
+		return new InputLoadFromSequence<InputLoadFromSingleFileOpenEXR>(GeneratorOfInputSequenceFilenames ("img_movingscene_%d.exr",0,3,1,1), int2(512,512));
 	}
 } m_appInputLoadFromSequenceOpenEXR;
 
@@ -83,7 +83,7 @@ public:
 	AppInputLoadFromResizedSequenceOpenEXR (): AppInputTest ("InputLoadFromResizedSequenceOpenEXR") {}
 	Ptr<Input> createInput ()
 	{
-		return new InputLoadFromSequence<InputLoadFromSingleFileOpenEXR>(GeneratorOfInputSequenceFilenames (m_sof, "img_movingscene_",".exr",0,3,1), int2(800,800), InputLoadFromSingleFileOpenEXR::LINEAR);
+		return new InputLoadFromSequence<InputLoadFromSingleFileOpenEXR>(GeneratorOfInputSequenceFilenames ("img_movingscene_%d.exr",0,3,1,1), int2(800,800), InputLoadFromSingleFileOpenEXR::LINEAR);
 	}
 } m_appInputLoadFromResizedSequenceOpenEXR;
 

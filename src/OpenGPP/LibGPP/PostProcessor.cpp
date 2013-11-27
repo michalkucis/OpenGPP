@@ -1,4 +1,5 @@
 #include "PostProcessor.h"
+#include "EffectGLImpl.h"
 #include <gl\glew.h>
 #include <gl\GL.h>
 
@@ -17,6 +18,9 @@ void PostProcessor::process()
 {
 	glEnable(GL_TEXTURE_2D);
 
+	bool prevDepthTest = glIsEnabled(GL_DEPTH_TEST);
+	glDisable(GL_DEPTH_TEST);
+
 	preprocessGL();
 
 	Vector<bool> vecDepthRequirements;
@@ -28,6 +32,13 @@ void PostProcessor::process()
 	Ptr<GLTextureEnvMap> envMap = requiredEnvMap ? m_input->getProcessedEnvMap() : NULL;
 	if (vecDepthRequirements.getSize() && vecDepthRequirements[0])
 		depth = m_input->getProcessedDepth();
+	if (m_vecEffects.getSize())
+	{
+		EffectResizeImages effect (m_factoryTexRGB, m_factoryTexRed);
+		tex = effect.process(tex, depth, envMap);
+		if (vecDepthRequirements[0])
+			depth = effect.processDepth(depth);
+	}
 	for (uint i = 0; i < m_vecEffects.getSize(); i++)
 	{
 		tex = m_vecEffects[i]->process(tex, depth, envMap);
@@ -42,4 +53,9 @@ void PostProcessor::process()
 	glPopMatrix();
 	glMatrixMode(GL_PROJECTION);
 	glPopMatrix();
+
+	if(prevDepthTest)
+		glEnable(GL_DEPTH_TEST);
+	else
+		glDisable(GL_DEPTH_TEST);
 }

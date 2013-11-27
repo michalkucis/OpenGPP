@@ -1,4 +1,3 @@
-
 #include <OpenGPP.h>
 
 #include "GL/glut.h"
@@ -28,7 +27,7 @@ void makeCheckImage(void)
 
 void init(void)
 {    
-/*	glClearColor (0.0, 0.0, 0.0, 0.0);
+	glClearColor (1.0, 0.0, 0.0, 0.0);
 	glShadeModel(GL_FLAT);
 	glEnable(GL_DEPTH_TEST);
 
@@ -47,10 +46,20 @@ void init(void)
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, checkImageWidth, 
 		checkImageHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, 
 		checkImage);
-*/}
+}
 
 void render()
 {
+	int w = 250;
+	int h = 250;
+	glViewport(0,0,w,h);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluPerspective(60.0, (GLfloat) w/(GLfloat) h, 1.0, 30.0);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	glTranslatef(0.0, 0.0, -3.6);
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glActiveTexture(GL_TEXTURE0);
 	glEnable(GL_TEXTURE_2D);
@@ -73,63 +82,33 @@ void render()
 }
 
 PostProcessor* g_pp;
-//Renderer* g_renderer;
+Renderer* g_renderer;
 
 void display(void)
 {
-	glShadeModel(GL_SMOOTH); 
-	glCullFace(GL_BACK);
-	glFrontFace(GL_CCW);
-	glEnable(GL_CULL_FACE); 
-	glClearColor(0, 0, 0, 0);
-	glViewport(0, 0, (GLsizei) 250, (GLsizei) 250);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
+	static Ptr<SharedObjectsFactory> sof = new SharedObjectsFactory(uint2(1024, 768));
 
 	static bool bInit = false;
 	if (! bInit)
 	{
-		g_pp = new PostProcessor;
-		//g_renderer = new Renderer(1024, 768, GL_RGBA8, GL_RGBA, true, GL_DEPTH_COMPONENT24);
+		g_pp = new PostProcessor(sof);
+		g_renderer = new Renderer(250, 250, GL_RGBA8, GL_RGBA, true, GL_DEPTH_COMPONENT24);
 	}
-	PostProcessor& pp = *g_pp;
-	//Renderer& renderer = *g_renderer;
 
 	if (! bInit)
 	{
-		//pp.m_input = renderer.createInput();
-		pp.m_input = new InputLoadFromSingleFileOpenEXR("D:\\devel\\projects\\OpenGPP\\src\\OpenGPP\\Data\\exrChangeLightIntensity\\img_light1_lamp10_pos0.exr");
+		g_pp->m_input = g_renderer->createInput();
 
-		SharedObjectsFactory sof(uint2(1024, 768));
-		pp.m_vecEffects.pushBack(new EffectRenderToScreen(0,0,1,1));
+		g_pp->m_vecEffects.pushBack(new EffectDistortionGrid(sof, uint2(32, 32), new FuncFtoFPolynomial(1, 0, 1, 0)));
+		g_pp->m_vecEffects.pushBack(new EffectRenderToScreen(0,0,1,1));
 		bInit = true;
 	}
 
-	//renderer.beginRender();
-	//render();
-	//renderer.endRender();
-	//glViewport(0,0,250,250);
-	//glShadeModel( GL_SMOOTH );
+	g_renderer->beginRender();
+	render();
+	g_renderer->endRender();
 
-	///* Culling. */
-	//glCullFace( GL_BACK );
-	//glFrontFace( GL_CCW );
-	//glDisable( GL_CULL_FACE );
-
-	/* Set the clear color. */
-	//glClearColor( 0, 0, 0, 0 );
-
-	
-	//glMatrixMode(GL_PROJECTION);
-	//glLoadIdentity();
-	
-	//glMatrixMode(GL_MODELVIEW);
-	//glLoadIdentity();
-	
-	/* Setup our viewport. */
-	//glViewport( 0, 0, 250, 250 );
-
-	pp.process();
+	g_pp->process();
 	glFlush();
 
 	glutPostRedisplay();

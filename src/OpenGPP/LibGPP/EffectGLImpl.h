@@ -21,6 +21,8 @@ protected:
 class EffectCopyColorAndDepthMaps: public EffectGL
 {
 public:
+	EffectCopyColorAndDepthMaps (Ptr<SharedObjectsFactory> sof): EffectGL(sof)
+	{ }
 	Ptr<GLTexture2D> process(Ptr<GLTexture2D> tex, Ptr<GLTexture2D> depth, Ptr<GLTextureEnvMap> envmap);
 	Ptr<GLTexture2D> processDepth (Ptr<GLTexture2D> depth);
 };

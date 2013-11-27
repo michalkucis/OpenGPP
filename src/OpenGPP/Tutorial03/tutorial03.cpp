@@ -12,7 +12,7 @@ public:
 	}
 	void initData()
 	{
-		m_pp = new PostProcessor();
+		m_pp = new PostProcessor(new SharedObjectsFactory(uint2(250,250)));
 		m_pp->m_input = new InputLoadFromSingleFileOpenEXR("exrChangeLightIntensity\\img_light1_lamp0_pos0.exr");
 		m_pp->m_vecEffects.pushBack(new EffectRenderToScreen(0,0,1,1));
 	}

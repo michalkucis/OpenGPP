@@ -96,8 +96,7 @@ public:
 class EffectTest: public EffectLensFlareStarFromEnvMap
 {
 public:
-	EffectTest(): EffectLensFlareStarFromEnvMap(new GLTexturesRGBFactory(uint2(512,512)), new GLTexturesRedFactory(uint2(512,512)),
-		1024,true,new EffectCLObjectsFactory)
+	EffectTest(): EffectLensFlareStarFromEnvMap(new SharedObjectsFactory(uint2(512,512)), 512, 512 ,true,new EffectCLObjectsFactory)
 	{}
 };
 
@@ -108,7 +107,7 @@ class ApplicationCL: public Application
 {
 	int m_countRenders;
 public:
-	ApplicationCL (): Application(1024,768)
+	ApplicationCL (): Application(1024,768), m_pp(uint2(1024,768))
 	{
 		m_countRenders = 100;
 	}
@@ -126,8 +125,8 @@ public:
 
 		//m_pp.m_input = new InputLoadFromSingleFileOpenEXR("exrReposition\\img_light1_lamp50_pos0.exr");
 		//m_pp.m_vecEffects.pushBack(Ptr<Effect>(new EffectTest()));
-		
-		m_pp.m_vecEffects.pushBack(Ptr<Effect>(new EffectCopyColorAndDepthMaps()));
+		Ptr<SharedObjectsFactory> sof = new SharedObjectsFactory(uint2(1024,768));
+		m_pp.m_vecEffects.pushBack(Ptr<Effect>(new EffectCopyColorAndDepthMaps(sof)));
 		m_pp.m_vecEffects.pushBack(Ptr<Effect>(new EffectRenderToScreen(0,0,1,1)));
 		m_pp.m_vecEffects.pushBack(Ptr<Effect>(new EffectSaveToVideoFileOpenCV("out.avi")));
 		//m_pp.m_vecEffects.pushBack(Ptr<Effect>(new EffectSaveToSingleFileOpenEXR("out.exr")));

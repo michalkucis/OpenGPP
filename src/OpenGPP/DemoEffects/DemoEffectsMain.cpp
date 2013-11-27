@@ -113,7 +113,10 @@ public:
 class ApplicationPP: public Application
 {
 public:
-	ApplicationPP (): Application(1280,720*4/3)
+	ApplicationPP (): Application(1280,720*4/3),
+		m_ppWebcam(uint2(512,512)),
+		m_ppWithDepth(uint2(512,512)),
+		m_ppWithDepthAndEnvMap(uint2(512,512))
 	{
 		m_sof = new SharedObjectsFactory(uint2(1024,768));
 	}

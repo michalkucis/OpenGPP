@@ -9,6 +9,7 @@
 #include "SharedObjectsFactory.h"
 #include "Factory.h"
 #include "Functions.h"
+#include "FuncImpl.h"
 #include "Input.h"
 #include "InputImpl.h"
 #include "InputImplOpenCV.h"
@@ -16,6 +17,7 @@
 #include "Renderer.h"
 #include "VisitorsImpl.h"
 #include "XML.h"
+
 
 
 

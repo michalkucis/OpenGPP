@@ -25,7 +25,8 @@
 class ApplicationDOF: public Application
 {
 public:
-	ApplicationDOF (): Application(1024,768)
+	ApplicationDOF (): Application(1024,768),
+		m_ppWithDepth(uint2(1024,768))
 	{
 		m_dofCoCFunc = NULL;
 		m_sof = new SharedObjectsFactory(uint2(1024, 768));
