@@ -34,6 +34,7 @@ protected:
 	void runMainCycle(SDL_Window* window);
 public:
 	void run ();
+	void sendQuit();
 
 };
 

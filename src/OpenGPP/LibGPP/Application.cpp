@@ -369,3 +369,8 @@ void Application::run()
 	SDL_DestroyWindow(window);
 	SDL_Quit();
 }
+
+void Application::sendQuit()
+{
+	SDL_Quit();
+}
