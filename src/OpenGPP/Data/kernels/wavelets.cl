@@ -87,8 +87,6 @@ float getCoeficient(int index)
 	{
 	case 0: return ALPHA;
 	case 1: return BETA; 
-	case 2: return GAMMA; 
-	case 3: return DELTA; 
 	}
 	return 0.0f;
 }
@@ -106,14 +104,14 @@ __kernel void transformLines(
 	int maxID = get_local_size(0);
 	
 
-	float c = getCoeficient(i);
+	float c = ALPHA;
 	saveElement(localMemory, myID, f1);
 	float4 f3 = loadElement(localMemory, myID, maxID, 1);
 		
 
 	f2 += c * (f1 + f3);
 
-	c = getCoeficient(i+1);
+	c = BETA;
 	saveElement(localMemory, myID, f2);
 	float4 f0 = loadElement(localMemory, myID, maxID, -1);
 
@@ -144,20 +142,17 @@ __kernel void reconstructLines(
 	int myID = get_local_id(0);
 	int maxID = get_local_size(0);
 	
-	for(int i = 0; i < NUM_STEPS; i+=2)
-	{
-		float c = getCoeficient(i+1);
-		saveElement(localMemory, myID, f2);
-		float4 f0 = loadElement(localMemory, myID, maxID, -1);
+	float c = BETA;
+	saveElement(localMemory, myID, f2);
+	float4 f0 = loadElement(localMemory, myID, maxID, -1);
 
-		f1 -= c * (f0 + f2);
+	f1 -= c * (f0 + f2);
 
-		c = getCoeficient(i);
-		saveElement(localMemory, myID, f1);
-		float4 f3 = loadElement(localMemory, myID, maxID, 1);
+	c = ALPHA;
+	saveElement(localMemory, myID, f1);
+	float4 f3 = loadElement(localMemory, myID, maxID, 1);
 		
-		f2 -= c * (f1 + f3);
-	}
+	f2 -= c * (f1 + f3);
 	
 	saveElementForLine(out, 0, f1);
 	saveElementForLine(out, 1, f2);
@@ -177,14 +172,14 @@ __kernel void transformColumns(
 	int maxID = get_local_size(0);
 	
 
-	float c = getCoeficient(i);
+	float c = ALPHA;
 	saveElement(localMemory, myID, f1);
 	float4 f3 = loadElement(localMemory, myID, maxID, 1);
 		
 
 	f2 += c * (f1 + f3);
 
-	c = getCoeficient(i+1);
+	c = BETA;
 	saveElement(localMemory, myID, f2);
 	float4 f0 = loadElement(localMemory, myID, maxID, -1);
 
@@ -215,20 +210,17 @@ __kernel void reconstructColumns(
 	int myID = get_local_id(0);
 	int maxID = get_local_size(0);
 	
-	for(int i = 0; i < NUM_STEPS; i+=2)
-	{
-		float c = getCoeficient(i+1);
-		saveElement(localMemory, myID, f2);
-		float4 f0 = loadElement(localMemory, myID, maxID, -1);
+	float c = BETA;
+	saveElement(localMemory, myID, f2);
+	float4 f0 = loadElement(localMemory, myID, maxID, -1);
 
-		f1 -= c * (f0 + f2);
+	f1 -= c * (f0 + f2);
 
-		c = getCoeficient(i);
-		saveElement(localMemory, myID, f1);
-		float4 f3 = loadElement(localMemory, myID, maxID, 1);
+	c = ALPHA;
+	saveElement(localMemory, myID, f1);
+	float4 f3 = loadElement(localMemory, myID, maxID, 1);
 		
-		f2 -= c * (f1 + f3);
-	}
+	f2 -= c * (f1 + f3);
 	
 	saveElementForColumn(out, 0, f1);
 	saveElementForColumn(out, 1, f2);

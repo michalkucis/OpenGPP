@@ -76,7 +76,7 @@ public:
 
 			m_queue->enqueueReleaseGLObjects(&vecGLMems);
 			m_queue->flush();
-			
+
 			return texRes;
 		} catchCLError;
 	}

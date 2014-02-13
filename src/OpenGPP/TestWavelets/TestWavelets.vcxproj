@@ -90,6 +90,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Data\kernels\wavelets.cl" />
+    <None Include="..\Data\kernels\waveletsCool.cl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
