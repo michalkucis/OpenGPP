@@ -86,9 +86,8 @@ void saveElementForLine(
 	int nLine = get_global_id(1);
 	int nOffset = get_global_id(0) - 1 - get_group_id(0)*2;;
 	int nColumn = nOffset + offset * constMemory->halfTextureResolution.x;
-		
 	int2 coord = {nColumn, nLine};
-	//f4.x = get_global_id(0);
+	//f4.x = offset;
 	if (get_local_id(0) >= 1 && get_local_id(0)+1 < get_local_size(0) && nOffset < constMemory->halfTextureResolution.x)
 		writeTexel(out, vars, coord, f4);	
 }
@@ -125,6 +124,7 @@ void saveElementForColumn(
 		writeTexel(out, vars, coord, f4);	
 }
 
+
 float4 loadElementForLineReconstruct(
 	__global read_only image2d_t in,
 	__constant ConstMemory_t* constMemory,
@@ -149,7 +149,7 @@ void saveElementForLineReconstruct(
 	float4 f4)
 {
 	int nLine = get_global_id(1);
-	int nColumn = get_global_id(0)*2 + offset - 1 - get_group_id(0)*2;
+	int nColumn = get_global_id(0)*2 + offset - 2 - get_group_id(0)*4;
 		
 	int2 coord = {nColumn, nLine};
 	if (get_local_id(0) >= 1 && get_local_id(0)+1 < get_local_size(0))
@@ -180,7 +180,7 @@ void saveElementForColumnReconstruct(
 	int offset,
 	float4 f4)
 {
-	int nLine = get_global_id(1)*2 + offset - 1 - get_group_id(1)*2;
+	int nLine = get_global_id(1)*2 + offset - 2 - get_group_id(1)*4;
 	int nColumn = get_global_id(0);
 		
 	int2 coord = {nColumn, nLine};
@@ -221,21 +221,22 @@ __kernel void linesTransform(
 	OftenUsedVars_t vars;
 	initOftenUsedVars(&vars, constMemory);
 	
+
 	float4 f1 = loadElementForLine(in, constMemory, &vars, 0);
 	float4 f2 = loadElementForLine(in, constMemory, &vars, 1);
 	
 
 	int myID = get_local_id(0);
 	int maxID = get_local_size(0);
-	
+	float c;
 
-	float c = ALPHA;
+
+	c = ALPHA;
 	saveElement(localMemory, myID, f1);
 	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
 	float4 f3 = loadElement(localMemory, myID, maxID, 1);
 	f2 += c * (f1 + f3);
 	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
-
 
 	c = BETA;
 	saveElement(localMemory, myID, f2);
@@ -243,6 +244,7 @@ __kernel void linesTransform(
 	float4 f0 = loadElement(localMemory, myID, maxID, -1);
 	f1 += c * (f0 + f2);
 	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
+
 
 	
 	f1 *= INV_ZETA;
@@ -255,47 +257,7 @@ __kernel void linesTransform(
 
 
 
-__kernel void columnsTransform(
-	__global read_only image2d_t in,
-	__global write_only image2d_t out,
 
-	__local float4* localMemory,
-	__constant ConstMemory_t* constMemory)
-{
-	OftenUsedVars_t vars;
-	initOftenUsedVars(&vars, constMemory);
-	
-	float4 f1 = loadElementForColumn(in, constMemory, &vars, 0);
-	float4 f2 = loadElementForColumn(in, constMemory, &vars, 1);
-	
-
-	int myID = get_local_id(1);
-	int maxID = get_local_size(1);
-	
-
-	float c = ALPHA;
-	saveElement(localMemory, myID, f1);
-	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
-	float4 f3 = loadElement(localMemory, myID, maxID, 1);
-	f2 += c * (f1 + f3);
-	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
-
-
-	c = BETA;
-	saveElement(localMemory, myID, f2);
-	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
-	float4 f0 = loadElement(localMemory, myID, maxID, -1);
-	f1 += c * (f0 + f2);
-	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
-
-	
-	f1 *= INV_ZETA;
-	f2 *= ZETA;
-
-	
-	saveElementForColumn(out, constMemory, &vars, 0, f1);
-	saveElementForColumn(out, constMemory, &vars, 1, f2);
-}
 
 
 
@@ -321,8 +283,10 @@ __kernel void linesReconstruct(
 	int myID = get_local_id(0);
 	int maxID = get_local_size(0);
 	
+	float c;
 
-	float c = BETA;
+
+	c = BETA;
 	saveElement(localMemory, myID, f2);
 	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
 	float4 f0 = loadElement(localMemory, myID, maxID, -1);
@@ -336,13 +300,56 @@ __kernel void linesReconstruct(
 	float4 f3 = loadElement(localMemory, myID, maxID, 1);
 	f2 -= c * (f1 + f3);
 	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
-
 	
+		
 	saveElementForLineReconstruct(out, constMemory, &vars, 0, f1);
 	saveElementForLineReconstruct(out, constMemory, &vars, 1, f2);
 }
 
 
+
+__kernel void columnsTransform(
+	__global read_only image2d_t in,
+	__global write_only image2d_t out,
+
+	__local float4* localMemory,
+	__constant ConstMemory_t* constMemory)
+{
+	OftenUsedVars_t vars;
+	initOftenUsedVars(&vars, constMemory);
+	
+	float4 f1 = loadElementForColumn(in, constMemory, &vars, 0);
+	float4 f2 = loadElementForColumn(in, constMemory, &vars, 1);
+	
+	
+	int myID = get_local_id(1);
+	int maxID = get_local_size(1);
+	float c;
+
+	
+	c = ALPHA;
+	saveElement(localMemory, myID, f1);
+	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
+	float4 f3 = loadElement(localMemory, myID, maxID, 1);
+	f2 += c * (f1 + f3);
+	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
+
+
+	c = BETA;
+	saveElement(localMemory, myID, f2);
+	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
+	float4 f0 = loadElement(localMemory, myID, maxID, -1);
+	f1 += c * (f0 + f2);
+	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
+
+
+	f1 *= INV_ZETA;
+	f2 *= ZETA;
+	
+	
+	saveElementForColumn(out, constMemory, &vars, 0, f1);
+	saveElementForColumn(out, constMemory, &vars, 1, f2);
+}
 
 
 __kernel void columnsReconstruct(

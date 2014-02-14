@@ -114,8 +114,9 @@ public:
 		//height = height/2+height%2;
 		
 		// transform:
+		
 		int nValidTmp=-1;
-		int n = 2;
+		int n = 1;
 		while (width > 1 && height > 1)
 		{
 			if (! n--)
@@ -266,7 +267,8 @@ public:
 
 
 		// reconstruct:
-		for (int i = 1/*vecUsedWidth.getSize()-1*/; i >= 0; i--)
+		//for (int i = vecUsedWidth.getSize()-1; i >= 0; i--)
+		for (int i = 0; i >= 0; i--)
 		{
 			int width = vecUsedWidth[i];
 			int height = vecUsedHeight[i];
@@ -338,7 +340,7 @@ public:
 				m_queue->enqueueCopyImage(src, dst, zero, zero, region);
 			}
 
-			if (width > 1)
+			if ( width > 1)
 			{
 				cl::Image2DGL src,dst;
 				if (nValidTmp==-1)
@@ -411,7 +413,6 @@ public:
 		nFrames++;
 		int actual = GetTickCount();
 		printf("Time: %f\n", 1.0f/((actual-start)/1000.0f/(float)nFrames));
-
 
 		cl::Image2DGL src, dst;
 		if (nValidTmp==-1)
@@ -595,12 +596,12 @@ public:
 		m_pp->m_vecEffects.pushBack(new EffectWaveletsCool(new SharedObjectsFactory(resolution), new EffectCLObjectsFactory));
 		m_pp->m_vecEffects.pushBack(new EffectRenderToScreen(0,0,1,1));
 		m_pp->m_vecEffects.pushBack(new EffectCopyColorAndDepthMaps(new SharedObjectsFactory(resolution)));
-		//m_pp->m_vecEffects.pushBack(new EffectSaveToMatlabASCII("out.txt"));
+		m_pp->m_vecEffects.pushBack(new EffectSaveToMatlabASCII("out.txt"));
 	}
 	void render()
 	{
 		m_pp->process();
-		//sendQuit();
+		sendQuit();
 	}
 	void clearData ()
 	{		
