@@ -14,6 +14,7 @@ struct ConstMemory_t
 	int2 textureResolution;
 	int2 megaTextureResolution;
 	int2 halfTextureResolution;
+	int2 secondTextureExtension;
 };
 
 
@@ -32,6 +33,7 @@ public:
 		m_hostConstMem.textureResolution = imageRes;
 		m_hostConstMem.megaTextureResolution = imageRes*2-2;
 		m_hostConstMem.halfTextureResolution = imageRes/2+imageRes%2;
+		m_hostConstMem.secondTextureExtension = -imageRes%2;
 
 		m_constMemory = cl::Buffer(*m_context, CL_MEM_READ_ONLY, sizeof(m_hostConstMem), &m_hostConstMem);
 		m_queue->enqueueWriteBuffer(m_constMemory, false, 0, sizeof(m_hostConstMem), &m_hostConstMem);
@@ -41,8 +43,8 @@ public:
 	{
 		m_kernelLinesTransform = createKernel(*m_context, "kernels\\waveletsCool.cl", "linesTransform");
 		m_kernelColumnsTransform = createKernel(*m_context, "kernels\\waveletsCool.cl", "columnsTransform");
-		//m_kernelLinesReconstruct = createKernel(*m_context, "kernels\\waveletsCool.cl", "linesReconstruct");
-		//m_kernelColumnsReconstruct = createKernel(*m_context, "kernels\\waveletsCool.cl", "columnsReconstruct");
+		m_kernelLinesReconstruct = createKernel(*m_context, "kernels\\waveletsCool.cl", "linesReconstruct");
+		m_kernelColumnsReconstruct = createKernel(*m_context, "kernels\\waveletsCool.cl", "columnsReconstruct");
 	}
 
 	EffectWaveletsCool(Ptr<SharedObjectsFactory> sof, Ptr<EffectCLObjectsFactory> factory): 
@@ -50,8 +52,8 @@ public:
 	{
 		m_kernelLinesTransform = createKernel(*m_context, "kernels\\waveletsCool.cl", "linesTransform");
 		m_kernelColumnsTransform = createKernel(*m_context, "kernels\\waveletsCool.cl", "columnsTransform");
-		//m_kernelLinesReconstruct = createKernel(*m_context, "kernels\\waveletsCool.cl", "linesReconstruct");
-		//m_kernelColumnsReconstruct = createKernel(*m_context, "kernels\\waveletsCool.cl", "columnsReconstruct");
+		m_kernelLinesReconstruct = createKernel(*m_context, "kernels\\waveletsCool.cl", "linesReconstruct");
+		m_kernelColumnsReconstruct = createKernel(*m_context, "kernels\\waveletsCool.cl", "columnsReconstruct");
 	}
 
 	int ceilToPower2(int x)
@@ -113,7 +115,7 @@ public:
 		
 		// transform:
 		int nValidTmp=-1;
-		int n = 100;
+		int n = 2;
 		while (width > 1 && height > 1)
 		{
 			if (! n--)
@@ -141,7 +143,7 @@ public:
 				int imageWidth = width;
 				int imageHeight = height;
 				int2 imageRes (width, height);
-				int numWorkItemWidth = ceilToPower2(std::min(1024,width/2+width%2+2));
+				int numWorkItemWidth = ceilToPower2(width/2+width%2+2);
 				int numGlobalItemsWidth = (int) ceil((ceil(((double)imageWidth)/2))/(numWorkItemWidth-2))*numWorkItemWidth;
 				int2 numWorkItems(numWorkItemWidth, 1);
 				int2 numGlobalItems(numGlobalItemsWidth, imageHeight);
@@ -183,7 +185,7 @@ public:
 			}
 
 
-			if (height > 1)
+			if (! height > 1)
 			{
 				if (nValidTmp==-1)
 				{
@@ -206,8 +208,7 @@ public:
 				int imageWidth = width;
 				int imageHeight = height;
 				int2 imageRes (width, height);
-
-				int numWorkItemHeight = ceilToPower2(std::min(1024,height));
+				int numWorkItemHeight = ceilToPower2(height/2+height%2+2);
 				int numGlobalItemsHeight = (int) ceil((ceil(((double)imageHeight)/2))/(numWorkItemHeight-2))*numWorkItemHeight;
 				int2 numWorkItems(1, numWorkItemHeight);
 				int2 numGlobalItems(imageWidth, numGlobalItemsHeight);
@@ -251,6 +252,167 @@ public:
 			width = width / 2 + width % 2;
 		}
 
+		Vector<int> vecUsedWidth;
+		Vector<int> vecUsedHeight;
+		width = imageResult.getImageInfo<CL_IMAGE_WIDTH>();
+		height = imageResult.getImageInfo<CL_IMAGE_HEIGHT>();
+		while (width > 1 || height > 1)
+		{
+			vecUsedWidth.pushBack(width);
+			vecUsedHeight.pushBack(height);
+			height = height / 2 + height % 2;
+			width = width / 2 + width % 2;
+		}
+
+
+		// reconstruct:
+		for (int i = 1/*vecUsedWidth.getSize()-1*/; i >= 0; i--)
+		{
+			int width = vecUsedWidth[i];
+			int height = vecUsedHeight[i];
+
+			if (! height > 1)
+			{
+				cl::Image2DGL src,dst;
+				if (nValidTmp==-1)
+				{
+					src = imageColor;
+					dst = imageTmp[0];
+					nValidTmp = 0;
+				}
+				else if(nValidTmp==0)
+				{
+					src = imageTmp[0];
+					dst = imageTmp[1];
+					nValidTmp = 1;
+				}
+				else if(nValidTmp==1)
+				{
+					src = imageTmp[1];
+					dst = imageTmp[0];
+					nValidTmp = 0;
+				}
+				m_kernelColumnsReconstruct.setArg(0, src);
+				m_kernelColumnsReconstruct.setArg(1, dst);
+				int imageWidth = width;
+				int imageHeight = height;
+				int numWorkItemHeight = ceilToPower2(height/2+height%2+2);
+				int numGlobalItemsHeight = (int) ceil((ceil(((double)numWorkItemHeight)/2))/(numWorkItemHeight-2))*numWorkItemHeight;
+				int2 numWorkItems(1, numWorkItemHeight);
+				int2 numGlobalItems(imageWidth, numGlobalItemsHeight);
+				int2 imageRes (width, height);
+				initKernelConstMemory(imageRes);
+				m_kernelColumnsReconstruct.setArg(2, numWorkItemHeight*sizeof(float4), 0);
+				m_kernelColumnsReconstruct.setArg(3, m_constMemory);
+				m_queue->enqueueNDRangeKernel(m_kernelColumnsReconstruct, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
+			}
+			else
+			{
+				cl::Image2DGL src, dst;
+				if (nValidTmp==-1)
+				{
+					src = imageColor;
+					dst = imageTmp[0];
+					nValidTmp = 0;
+				}
+				else if(nValidTmp==0)
+				{
+					src = imageTmp[0];
+					dst = imageTmp[1];
+					nValidTmp = 1;
+				}
+				else if(nValidTmp==1)
+				{
+					src = imageTmp[1];
+					dst = imageTmp[0];
+					nValidTmp = 0;
+				}
+				cl::size_t<3> zero;
+				zero[0] = 0;
+				zero[1] = 0;
+				zero[2] = 0;
+				cl::size_t<3> region;
+				region[0] = width;
+				region[1] = height;
+				region[2] = 1;
+				m_queue->enqueueCopyImage(src, dst, zero, zero, region);
+			}
+
+			if (width > 1)
+			{
+				cl::Image2DGL src,dst;
+				if (nValidTmp==-1)
+				{
+					src = imageColor;
+					dst = imageTmp[0];
+					nValidTmp = 0;
+				}
+				else if(nValidTmp==0)
+				{
+					src = imageTmp[0];
+					dst = imageTmp[1];
+					nValidTmp = 1;
+				}
+				else if(nValidTmp==1)
+				{
+					src = imageTmp[1];
+					dst = imageTmp[0];
+					nValidTmp = 0;
+				}
+				m_kernelLinesReconstruct.setArg(0, src);
+				m_kernelLinesReconstruct.setArg(1, dst);
+				int imageWidth = width;
+				int imageHeight = height;
+				int numWorkItemWidth = ceilToPower2(width/2+width%2+2);
+				int numGlobalItemsWidth = (int) ceil((ceil(((double)imageWidth)/2))/(numWorkItemWidth-2))*numWorkItemWidth;
+				int2 numWorkItems(numWorkItemWidth, 1);
+				int2 numGlobalItems(numGlobalItemsWidth, imageHeight);
+				m_kernelLinesReconstruct.setArg(2, numWorkItemWidth*sizeof(float4), 0);
+				int2 imageRes (width, height);
+				initKernelConstMemory(imageRes);
+				m_kernelLinesReconstruct.setArg(3, m_constMemory);
+				m_queue->enqueueNDRangeKernel(m_kernelLinesReconstruct, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
+			}
+			else
+			{
+				cl::Image2DGL src, dst;
+				if (nValidTmp==-1)
+				{
+					src = imageColor;
+					dst = imageTmp[0];
+					nValidTmp = 0;
+				}
+				else if(nValidTmp==0)
+				{
+					src = imageTmp[0];
+					dst = imageTmp[1];
+					nValidTmp = 1;
+				}
+				else if(nValidTmp==1)
+				{
+					src = imageTmp[1];
+					dst = imageTmp[0];
+					nValidTmp = 0;
+				}
+				cl::size_t<3> zero;
+				zero[0] = 0;
+				zero[1] = 0;
+				zero[2] = 0;
+				cl::size_t<3> region;
+				region[0] = width;
+				region[1] = height;
+				region[2] = 1;
+				m_queue->enqueueCopyImage(src, dst, zero, zero, region);
+			}
+		}
+
+		static int start = GetTickCount();
+		static int nFrames = -1;
+		nFrames++;
+		int actual = GetTickCount();
+		printf("Time: %f\n", 1.0f/((actual-start)/1000.0f/(float)nFrames));
+
+
 		cl::Image2DGL src, dst;
 		if (nValidTmp==-1)
 		{
@@ -281,49 +443,6 @@ public:
 		region[1] = height;
 		region[2] = 1;
 		m_queue->enqueueCopyImage(src, dst, zero, zero, region);
-		
-/*		Vector<int> vecUsedWidth;
-		Vector<int> vecUsedHeight;
-		width = imageResult.getImageInfo<CL_IMAGE_WIDTH>();
-		int height = imageResult.getImageInfo<CL_IMAGE_HEIGHT>();
-		while (width > 1 || height > 1)
-		{
-			height = height / 2 + height % 2;
-			width = width / 2 + width % 2;
-			vecUsedWidth.pushBack(width);
-			vecUsedHeight.pushBack(height);
-		}
-
-		m_kernelLinesReconstruct.setArg(0, imageColor);
-		m_kernelLinesReconstruct.setArg(1, imageResult);
-
-		// reconstruct:
-		for (int i = vecUsedWidth.getSize()-1; i >= 0; i--)
-		{
-			int width = vecUsedWidth[i];
-			int height = vecUsedHeight[i];
-
-			if (width > 1)
-			{
-				int imageWidth = width;
-				int imageHeight = imageResult.getImageInfo<CL_IMAGE_HEIGHT>();
-				int numWorkItemWidth = ceilToPower2(std::min(1024,width));
-				int numGlobalItemsWidth = (int) ceil((ceil(((double)imageWidth)/2))/(numWorkItemWidth-2))*numWorkItemWidth;
-				int2 numWorkItems(numWorkItemWidth, 1);
-				int2 numGlobalItems(numGlobalItemsWidth, imageHeight);
-				m_kernelLinesReconstruct.setArg(2, numWorkItemWidth*sizeof(float4), 0);
-				int2 imageRes (width, imageResult.getImageInfo<CL_IMAGE_HEIGHT>());
-				initKernelConstMemory(imageRes);
-				m_kernelLinesReconstruct.setArg(3, m_constMemory);
-				m_queue->enqueueNDRangeKernel(m_kernelLinesReconstruct, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
-			}
-		}
-*/	
-		static int start = GetTickCount();
-		static int nFrames = -1;
-		nFrames++;
-		int actual = GetTickCount();
-		printf("Time: %f\n", 1.0f/((actual-start)/1000.0f/(float)nFrames));
 	}
 
 	Ptr<GLTexture2D> createTexTarget()
