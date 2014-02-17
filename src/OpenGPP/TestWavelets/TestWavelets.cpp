@@ -186,69 +186,69 @@ public:
 			}
 
 
-			if (! height > 1)
-			{
-				if (nValidTmp==-1)
-				{
-					m_kernelColumnsTransform.setArg(0, imageColor);
-					m_kernelColumnsTransform.setArg(1, imageTmp[0]);
-					nValidTmp = 0;
-				}
-				else if(nValidTmp==0)
-				{
-					m_kernelColumnsTransform.setArg(0, imageTmp[0]);
-					m_kernelColumnsTransform.setArg(1, imageTmp[1]);
-					nValidTmp = 1;
-				}
-				else if(nValidTmp==1)
-				{
-					m_kernelColumnsTransform.setArg(0, imageTmp[1]);
-					m_kernelColumnsTransform.setArg(1, imageTmp[0]);
-					nValidTmp = 0;
-				}
-				int imageWidth = width;
-				int imageHeight = height;
-				int2 imageRes (width, height);
-				int numWorkItemHeight = ceilToPower2(height/2+height%2+2);
-				int numGlobalItemsHeight = (int) ceil((ceil(((double)imageHeight)/2))/(numWorkItemHeight-2))*numWorkItemHeight;
-				int2 numWorkItems(1, numWorkItemHeight);
-				int2 numGlobalItems(imageWidth, numGlobalItemsHeight);
-				m_kernelColumnsTransform.setArg(2, numWorkItemHeight*sizeof(float4), 0);
-				initKernelConstMemory(imageRes);
-				m_kernelColumnsTransform.setArg(3, m_constMemory);
-				m_queue->enqueueNDRangeKernel(m_kernelColumnsTransform, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
-			}
-			else
-			{
-				cl::Image2DGL src, dst;
-				if (nValidTmp==-1)
-				{
-					src = imageColor;
-					dst = imageTmp[0];
-					nValidTmp = 0;
-				}
-				else if(nValidTmp==0)
-				{
-					src = imageTmp[0];
-					dst = imageTmp[1];
-					nValidTmp = 1;
-				}
-				else if(nValidTmp==1)
-				{
-					src = imageTmp[1];
-					dst = imageTmp[0];
-					nValidTmp = 0;
-				}
-				cl::size_t<3> zero;
-				zero[0] = 0;
-				zero[1] = 0;
-				zero[2] = 0;
-				cl::size_t<3> region;
-				region[0] = width;
-				region[1] = height;
-				region[2] = 1;
-				m_queue->enqueueCopyImage(src, dst, zero, zero, region);
-			}
+			//if (! height > 1)
+			//{
+			//	if (nValidTmp==-1)
+			//	{
+			//		m_kernelColumnsTransform.setArg(0, imageColor);
+			//		m_kernelColumnsTransform.setArg(1, imageTmp[0]);
+			//		nValidTmp = 0;
+			//	}
+			//	else if(nValidTmp==0)
+			//	{
+			//		m_kernelColumnsTransform.setArg(0, imageTmp[0]);
+			//		m_kernelColumnsTransform.setArg(1, imageTmp[1]);
+			//		nValidTmp = 1;
+			//	}
+			//	else if(nValidTmp==1)
+			//	{
+			//		m_kernelColumnsTransform.setArg(0, imageTmp[1]);
+			//		m_kernelColumnsTransform.setArg(1, imageTmp[0]);
+			//		nValidTmp = 0;
+			//	}
+			//	int imageWidth = width;
+			//	int imageHeight = height;
+			//	int2 imageRes (width, height);
+			//	int numWorkItemHeight = ceilToPower2(height/2+height%2+2);
+			//	int numGlobalItemsHeight = (int) ceil((ceil(((double)imageHeight)/2))/(numWorkItemHeight-2))*numWorkItemHeight;
+			//	int2 numWorkItems(1, numWorkItemHeight);
+			//	int2 numGlobalItems(imageWidth, numGlobalItemsHeight);
+			//	m_kernelColumnsTransform.setArg(2, numWorkItemHeight*sizeof(float4), 0);
+			//	initKernelConstMemory(imageRes);
+			//	m_kernelColumnsTransform.setArg(3, m_constMemory);
+			//	m_queue->enqueueNDRangeKernel(m_kernelColumnsTransform, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
+			//}
+			//else
+			//{
+			//	cl::Image2DGL src, dst;
+			//	if (nValidTmp==-1)
+			//	{
+			//		src = imageColor;
+			//		dst = imageTmp[0];
+			//		nValidTmp = 0;
+			//	}
+			//	else if(nValidTmp==0)
+			//	{
+			//		src = imageTmp[0];
+			//		dst = imageTmp[1];
+			//		nValidTmp = 1;
+			//	}
+			//	else if(nValidTmp==1)
+			//	{
+			//		src = imageTmp[1];
+			//		dst = imageTmp[0];
+			//		nValidTmp = 0;
+			//	}
+			//	cl::size_t<3> zero;
+			//	zero[0] = 0;
+			//	zero[1] = 0;
+			//	zero[2] = 0;
+			//	cl::size_t<3> region;
+			//	region[0] = width;
+			//	region[1] = height;
+			//	region[2] = 1;
+			//	m_queue->enqueueCopyImage(src, dst, zero, zero, region);
+			//}
 			height = height / 2 + height % 2;
 			width = width / 2 + width % 2;
 		}
@@ -273,72 +273,72 @@ public:
 			int width = vecUsedWidth[i];
 			int height = vecUsedHeight[i];
 
-			if (! height > 1)
-			{
-				cl::Image2DGL src,dst;
-				if (nValidTmp==-1)
-				{
-					src = imageColor;
-					dst = imageTmp[0];
-					nValidTmp = 0;
-				}
-				else if(nValidTmp==0)
-				{
-					src = imageTmp[0];
-					dst = imageTmp[1];
-					nValidTmp = 1;
-				}
-				else if(nValidTmp==1)
-				{
-					src = imageTmp[1];
-					dst = imageTmp[0];
-					nValidTmp = 0;
-				}
-				m_kernelColumnsReconstruct.setArg(0, src);
-				m_kernelColumnsReconstruct.setArg(1, dst);
-				int imageWidth = width;
-				int imageHeight = height;
-				int numWorkItemHeight = ceilToPower2(height/2+height%2+2);
-				int numGlobalItemsHeight = (int) ceil((ceil(((double)numWorkItemHeight)/2))/(numWorkItemHeight-2))*numWorkItemHeight;
-				int2 numWorkItems(1, numWorkItemHeight);
-				int2 numGlobalItems(imageWidth, numGlobalItemsHeight);
-				int2 imageRes (width, height);
-				initKernelConstMemory(imageRes);
-				m_kernelColumnsReconstruct.setArg(2, numWorkItemHeight*sizeof(float4), 0);
-				m_kernelColumnsReconstruct.setArg(3, m_constMemory);
-				m_queue->enqueueNDRangeKernel(m_kernelColumnsReconstruct, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
-			}
-			else
-			{
-				cl::Image2DGL src, dst;
-				if (nValidTmp==-1)
-				{
-					src = imageColor;
-					dst = imageTmp[0];
-					nValidTmp = 0;
-				}
-				else if(nValidTmp==0)
-				{
-					src = imageTmp[0];
-					dst = imageTmp[1];
-					nValidTmp = 1;
-				}
-				else if(nValidTmp==1)
-				{
-					src = imageTmp[1];
-					dst = imageTmp[0];
-					nValidTmp = 0;
-				}
-				cl::size_t<3> zero;
-				zero[0] = 0;
-				zero[1] = 0;
-				zero[2] = 0;
-				cl::size_t<3> region;
-				region[0] = width;
-				region[1] = height;
-				region[2] = 1;
-				m_queue->enqueueCopyImage(src, dst, zero, zero, region);
-			}
+			//if (! height > 1)
+			//{
+			//	cl::Image2DGL src,dst;
+			//	if (nValidTmp==-1)
+			//	{
+			//		src = imageColor;
+			//		dst = imageTmp[0];
+			//		nValidTmp = 0;
+			//	}
+			//	else if(nValidTmp==0)
+			//	{
+			//		src = imageTmp[0];
+			//		dst = imageTmp[1];
+			//		nValidTmp = 1;
+			//	}
+			//	else if(nValidTmp==1)
+			//	{
+			//		src = imageTmp[1];
+			//		dst = imageTmp[0];
+			//		nValidTmp = 0;
+			//	}
+			//	m_kernelColumnsReconstruct.setArg(0, src);
+			//	m_kernelColumnsReconstruct.setArg(1, dst);
+			//	int imageWidth = width;
+			//	int imageHeight = height;
+			//	int numWorkItemHeight = ceilToPower2(height/2+height%2+2);
+			//	int numGlobalItemsHeight = (int) ceil((ceil(((double)numWorkItemHeight)/2))/(numWorkItemHeight-2))*numWorkItemHeight;
+			//	int2 numWorkItems(1, numWorkItemHeight);
+			//	int2 numGlobalItems(imageWidth, numGlobalItemsHeight);
+			//	int2 imageRes (width, height);
+			//	initKernelConstMemory(imageRes);
+			//	m_kernelColumnsReconstruct.setArg(2, numWorkItemHeight*sizeof(float4), 0);
+			//	m_kernelColumnsReconstruct.setArg(3, m_constMemory);
+			//	m_queue->enqueueNDRangeKernel(m_kernelColumnsReconstruct, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
+			//}
+			//else
+			//{
+			//	cl::Image2DGL src, dst;
+			//	if (nValidTmp==-1)
+			//	{
+			//		src = imageColor;
+			//		dst = imageTmp[0];
+			//		nValidTmp = 0;
+			//	}
+			//	else if(nValidTmp==0)
+			//	{
+			//		src = imageTmp[0];
+			//		dst = imageTmp[1];
+			//		nValidTmp = 1;
+			//	}
+			//	else if(nValidTmp==1)
+			//	{
+			//		src = imageTmp[1];
+			//		dst = imageTmp[0];
+			//		nValidTmp = 0;
+			//	}
+			//	cl::size_t<3> zero;
+			//	zero[0] = 0;
+			//	zero[1] = 0;
+			//	zero[2] = 0;
+			//	cl::size_t<3> region;
+			//	region[0] = width;
+			//	region[1] = height;
+			//	region[2] = 1;
+			//	m_queue->enqueueCopyImage(src, dst, zero, zero, region);
+			//}
 
 			if ( width > 1)
 			{
