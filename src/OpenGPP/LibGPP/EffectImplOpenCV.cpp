@@ -3,7 +3,7 @@
 
 #pragma comment(lib, "cv210d.lib")
 #pragma comment(lib, "cvaux210d.lib")
-#pragma comment(lib, "cvhaartraining210d.lib")
+//#pragma comment(lib, "cvhaartraining210d.lib")
 #pragma comment(lib, "cxcore210d.lib")
 #pragma comment(lib, "cxts210d.lib")
 #pragma comment(lib, "highgui210d.lib")

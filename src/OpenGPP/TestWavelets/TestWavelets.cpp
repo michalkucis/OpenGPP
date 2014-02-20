@@ -14,8 +14,64 @@ struct ConstMemory_t
 	int2 textureResolution;
 	int2 megaTextureResolution;
 	int2 halfTextureResolution;
-	int2 secondTextureExtension;
 };
+
+
+class ImageSwapper
+{
+	int n_nUsedImage;
+	cl::Image2DGL m_imagesSwap[2];
+	cl::Image2DGL m_imageSrc;
+public:
+	ImageSwapper(cl::Image2DGL sourceIm, cl::Image2DGL* imageSwap)
+	{
+		m_imageSrc = sourceIm;
+		n_nUsedImage = -1;
+		m_imagesSwap[0] = imageSwap[0];		
+		m_imagesSwap[1] = imageSwap[1];
+	}
+	
+	void getImages(cl::Image2DGL& src, cl::Image2DGL& dst)
+	{
+		if (n_nUsedImage==-1)
+		{
+			src = m_imageSrc;
+			dst = m_imagesSwap[0];
+			n_nUsedImage = 0;
+		}
+		else if(n_nUsedImage==0)
+		{
+			src = m_imagesSwap[0];
+			dst = m_imagesSwap[1];
+			n_nUsedImage = 1;
+		}
+		else if(n_nUsedImage==1)
+		{
+			src = m_imagesSwap[1];
+			dst = m_imagesSwap[0];
+			n_nUsedImage = 0;
+		}
+	}
+
+	void setImages(cl::Kernel& kernel)
+	{
+		cl::Image2DGL src, dst;
+		getImages(src, dst);
+		kernel.setArg(0, src);
+		kernel.setArg(1, dst);
+	}
+
+	void setImages(cl::Kernel& kernel, cl::Image2DGL imTarget)
+	{
+		cl::Image2DGL src, dst;
+		getImages(src, dst);
+		kernel.setArg(0, src);
+		kernel.setArg(1, imTarget);
+	}
+};
+
+
+
 
 
 class EffectWaveletsCool: public EffectCL<EffectGL>
@@ -24,7 +80,7 @@ class EffectWaveletsCool: public EffectCL<EffectGL>
 	cl::Kernel m_kernelColumnsTransform;
 	cl::Kernel m_kernelLinesReconstruct;
 	cl::Kernel m_kernelColumnsReconstruct;
-	cl::Kernel m_kernelCopy;
+
 	cl::Buffer m_constMemory;
 	ConstMemory_t m_hostConstMem;
 public:
@@ -33,7 +89,6 @@ public:
 		m_hostConstMem.textureResolution = imageRes;
 		m_hostConstMem.megaTextureResolution = imageRes*2-2;
 		m_hostConstMem.halfTextureResolution = imageRes/2+imageRes%2;
-		m_hostConstMem.secondTextureExtension = -imageRes%2;
 
 		m_constMemory = cl::Buffer(*m_context, CL_MEM_READ_ONLY, sizeof(m_hostConstMem), &m_hostConstMem);
 		m_queue->enqueueWriteBuffer(m_constMemory, false, 0, sizeof(m_hostConstMem), &m_hostConstMem);
@@ -55,7 +110,7 @@ public:
 		m_kernelLinesReconstruct = createKernel(*m_context, "kernels\\waveletsCool.cl", "linesReconstruct");
 		m_kernelColumnsReconstruct = createKernel(*m_context, "kernels\\waveletsCool.cl", "columnsReconstruct");
 	}
-
+protected:
 	int ceilToPower2(int x)
 	{
 		x -= 1;
@@ -63,7 +118,11 @@ public:
 		for(; x; x >>= 1, power++);
 		return 1 << power;
 	}
-
+	void runKernel(cl::Image2DGL& imageColor, cl::Image2DGL& imageDepth, Ptr<GLTextureEnvMap> envMap, cl::Image2DGL& imageResult)
+	{
+		error0(ERR_STRUCT, "DON'T CALL ME BABY!!!");
+	}
+public:
 	Ptr<GLTexture2D> process (Ptr<GLTexture2D> texColor, Ptr<GLTexture2D> texDepth, Ptr<GLTextureEnvMap> texEnvMap)
 	{
 		try 
@@ -82,331 +141,129 @@ public:
 				getImage2DGL(*m_context, CL_MEM_READ_WRITE, texTmp1),
 				getImage2DGL(*m_context, CL_MEM_READ_WRITE, texTmp2)};
 
-			std::vector<cl::Memory> vecGLMems;
-			vecGLMems.push_back(imageColor);
-			if (requireDepth())
-				vecGLMems.push_back(imageDepth);
-			for (int i = 0; i < 2; i++)
-				vecGLMems.push_back(imageTmp[i]);
+				std::vector<cl::Memory> vecGLMems;
+				vecGLMems.push_back(imageColor);
+				if (requireDepth())
+					vecGLMems.push_back(imageDepth);
+				for (int i = 0; i < 2; i++)
+					vecGLMems.push_back(imageTmp[i]);
 
-			vecGLMems.push_back(imageRes);
-			m_queue->enqueueAcquireGLObjects(&vecGLMems);
+				vecGLMems.push_back(imageRes);
+				m_queue->enqueueAcquireGLObjects(&vecGLMems);
 
-			runKernels(imageColor, imageDepth, texEnvMap, imageRes, imageTmp);
+				runKernels(imageColor, imageDepth, texEnvMap, imageRes, imageTmp);
 
-			m_queue->enqueueReleaseGLObjects(&vecGLMems);
-			m_queue->flush();
+				m_queue->enqueueReleaseGLObjects(&vecGLMems);
+				m_queue->flush();
 
-			return texRes;
+				return texRes;
 		} catchCLError;
 	}
 
-	void runKernel(cl::Image2DGL& imageColor, cl::Image2DGL& imageDepth, Ptr<GLTextureEnvMap> envMap, cl::Image2DGL& imageResult)
+	int2 getLvlResolution (int2 lvl0, int lvl)
 	{
-		error0(ERR_STRUCT, "DON'T CALL ME!!!");
+		int width = lvl0.x;
+		int height = lvl0.y;
+		for(int i = 0; i < lvl && (width > 1 || height > 1); i++)
+		{
+			height = height / 2 + height % 2;
+			width = width / 2 + width % 2;
+		}
+		int2 res (width, height);
+		return res;
 	}
-	void runKernels(cl::Image2DGL& imageColor, cl::Image2DGL& imageDepth, Ptr<GLTextureEnvMap> envMap, cl::Image2DGL& imageResult, cl::Image2DGL imageTmp[2])
-	{		
-		int width = imageResult.getImageInfo<CL_IMAGE_WIDTH>();
-		int height = imageResult.getImageInfo<CL_IMAGE_HEIGHT>();
 
-		//width = width/2+width%2;
-		//height = height/2+height%2;
-		
+	int getUsefulCountLvls (int2 lvl0)
+	{
+		for (int lvl = 0; true; lvl++)
+		{
+			int2 res = getLvlResolution(lvl0, lvl);
+			if (res.x == 1 && res.y == 1)
+				return lvl;
+		}
+	}
+
+	int getOptCountWorkItems (int resolution)
+	{
+		int count = resolution/2 + resolution%2 + 2;
+		int mask = 32-1;
+		count = count & (~mask) + (count&mask) ? 32 : 1;
+		return count;
+	}
+
+	void copyImage(ImageSwapper& imSwapper, int2 resolution)
+	{
+		cl::Image2DGL src, dst;
+		imSwapper.getImages(src,dst);
+		cl::size_t<3> zero;
+		zero[0] = 0;
+		zero[1] = 0;
+		zero[2] = 0;
+		cl::size_t<3> region;
+		region[0] = resolution.x;
+		region[1] = resolution.y;
+		region[2] = 1;
+		m_queue->enqueueCopyImage(src, dst, zero, zero, region);
+	}
+
+
+
+public:
+	void runKernels(cl::Image2DGL& imageColor, cl::Image2DGL& imageDepth, Ptr<GLTextureEnvMap> envMap, cl::Image2DGL& imageResult, cl::Image2DGL imageTmp[2])
+	{	
+		ImageSwapper imSwapper (imageColor, imageTmp);
+		int2 res (imageResult.getImageInfo<CL_IMAGE_WIDTH>(), imageResult.getImageInfo<CL_IMAGE_HEIGHT>());
+
 		// transform:
-		
-		int nValidTmp=-1;
-		int n = 1;
-		while (width > 1 && height > 1)
+		int countLvls = getUsefulCountLvls(res);
+		int n = 11;
+		for (int i = 10; i < countLvls; i++)
 		{
 			if (! n--)
 				break;
-			if (width > 1)
+
+			int2 resLvl = getLvlResolution(res, i);
+			if (resLvl.x > 1)
 			{
-				if (nValidTmp==-1)
-				{
-					m_kernelLinesTransform.setArg(0, imageColor);
-					m_kernelLinesTransform.setArg(1, imageTmp[0]);
-					nValidTmp = 0;
-				}
-				else if(nValidTmp==0)
-				{
-					m_kernelLinesTransform.setArg(0, imageTmp[0]);
-					m_kernelLinesTransform.setArg(1, imageTmp[1]);
-					nValidTmp = 1;
-				}
-				else if(nValidTmp==1)
-				{
-					m_kernelLinesTransform.setArg(0, imageTmp[1]);
-					m_kernelLinesTransform.setArg(1, imageTmp[0]);
-					nValidTmp = 0;
-				}
-				int imageWidth = width;
-				int imageHeight = height;
-				int2 imageRes (width, height);
-				int numWorkItemWidth = ceilToPower2(width/2+width%2+2);
-				int numGlobalItemsWidth = (int) ceil((ceil(((double)imageWidth)/2))/(numWorkItemWidth-2))*numWorkItemWidth;
+				imSwapper.setImages(m_kernelLinesTransform);
+
+				int numWorkItemWidth = getOptCountWorkItems(resLvl.x);
+				int numGlobalItemsWidth = numWorkItemWidth;
 				int2 numWorkItems(numWorkItemWidth, 1);
-				int2 numGlobalItems(numGlobalItemsWidth, imageHeight);
+				int2 numGlobalItems(numGlobalItemsWidth, resLvl.y);
 				m_kernelLinesTransform.setArg(2, numWorkItemWidth*sizeof(float4), 0);
-				initKernelConstMemory(imageRes);
+				initKernelConstMemory(resLvl);
 				m_kernelLinesTransform.setArg(3, m_constMemory);
 				m_queue->enqueueNDRangeKernel(m_kernelLinesTransform, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
 			}
 			else
-			{
-				cl::Image2DGL src, dst;
-				if (nValidTmp==-1)
-				{
-					src = imageColor;
-					dst = imageTmp[0];
-					nValidTmp = 0;
-				}
-				else if(nValidTmp==0)
-				{
-					src = imageTmp[0];
-					dst = imageTmp[1];
-					nValidTmp = 1;
-				}
-				else if(nValidTmp==1)
-				{
-					src = imageTmp[1];
-					dst = imageTmp[0];
-					nValidTmp = 0;
-				}
-				cl::size_t<3> zero;
-				zero[0] = 0;
-				zero[1] = 0;
-				zero[2] = 0;
-				cl::size_t<3> region;
-				region[0] = width;
-				region[1] = height;
-				region[2] = 1;
-				m_queue->enqueueCopyImage(src, dst, zero, zero, region);
-			}
-
-
-			//if (! height > 1)
-			//{
-			//	if (nValidTmp==-1)
-			//	{
-			//		m_kernelColumnsTransform.setArg(0, imageColor);
-			//		m_kernelColumnsTransform.setArg(1, imageTmp[0]);
-			//		nValidTmp = 0;
-			//	}
-			//	else if(nValidTmp==0)
-			//	{
-			//		m_kernelColumnsTransform.setArg(0, imageTmp[0]);
-			//		m_kernelColumnsTransform.setArg(1, imageTmp[1]);
-			//		nValidTmp = 1;
-			//	}
-			//	else if(nValidTmp==1)
-			//	{
-			//		m_kernelColumnsTransform.setArg(0, imageTmp[1]);
-			//		m_kernelColumnsTransform.setArg(1, imageTmp[0]);
-			//		nValidTmp = 0;
-			//	}
-			//	int imageWidth = width;
-			//	int imageHeight = height;
-			//	int2 imageRes (width, height);
-			//	int numWorkItemHeight = ceilToPower2(height/2+height%2+2);
-			//	int numGlobalItemsHeight = (int) ceil((ceil(((double)imageHeight)/2))/(numWorkItemHeight-2))*numWorkItemHeight;
-			//	int2 numWorkItems(1, numWorkItemHeight);
-			//	int2 numGlobalItems(imageWidth, numGlobalItemsHeight);
-			//	m_kernelColumnsTransform.setArg(2, numWorkItemHeight*sizeof(float4), 0);
-			//	initKernelConstMemory(imageRes);
-			//	m_kernelColumnsTransform.setArg(3, m_constMemory);
-			//	m_queue->enqueueNDRangeKernel(m_kernelColumnsTransform, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
-			//}
-			//else
-			//{
-			//	cl::Image2DGL src, dst;
-			//	if (nValidTmp==-1)
-			//	{
-			//		src = imageColor;
-			//		dst = imageTmp[0];
-			//		nValidTmp = 0;
-			//	}
-			//	else if(nValidTmp==0)
-			//	{
-			//		src = imageTmp[0];
-			//		dst = imageTmp[1];
-			//		nValidTmp = 1;
-			//	}
-			//	else if(nValidTmp==1)
-			//	{
-			//		src = imageTmp[1];
-			//		dst = imageTmp[0];
-			//		nValidTmp = 0;
-			//	}
-			//	cl::size_t<3> zero;
-			//	zero[0] = 0;
-			//	zero[1] = 0;
-			//	zero[2] = 0;
-			//	cl::size_t<3> region;
-			//	region[0] = width;
-			//	region[1] = height;
-			//	region[2] = 1;
-			//	m_queue->enqueueCopyImage(src, dst, zero, zero, region);
-			//}
-			height = height / 2 + height % 2;
-			width = width / 2 + width % 2;
+				copyImage (imSwapper, resLvl);
 		}
 
-		Vector<int> vecUsedWidth;
-		Vector<int> vecUsedHeight;
-		width = imageResult.getImageInfo<CL_IMAGE_WIDTH>();
-		height = imageResult.getImageInfo<CL_IMAGE_HEIGHT>();
-		while (width > 1 || height > 1)
-		{
-			vecUsedWidth.pushBack(width);
-			vecUsedHeight.pushBack(height);
-			height = height / 2 + height % 2;
-			width = width / 2 + width % 2;
-		}
 
 
 		// reconstruct:
-		//for (int i = vecUsedWidth.getSize()-1; i >= 0; i--)
-		for (int i = 0; i >= 0; i--)
+		//for (int i = getUsefulCountLvls()-1; i >= 0; i--)
+		/*for (int i = 9; i >= 0; i--)
 		{
-			int width = vecUsedWidth[i];
-			int height = vecUsedHeight[i];
+			int2 resLvl (getLvlResolution(res, i));
 
-			//if (! height > 1)
-			//{
-			//	cl::Image2DGL src,dst;
-			//	if (nValidTmp==-1)
-			//	{
-			//		src = imageColor;
-			//		dst = imageTmp[0];
-			//		nValidTmp = 0;
-			//	}
-			//	else if(nValidTmp==0)
-			//	{
-			//		src = imageTmp[0];
-			//		dst = imageTmp[1];
-			//		nValidTmp = 1;
-			//	}
-			//	else if(nValidTmp==1)
-			//	{
-			//		src = imageTmp[1];
-			//		dst = imageTmp[0];
-			//		nValidTmp = 0;
-			//	}
-			//	m_kernelColumnsReconstruct.setArg(0, src);
-			//	m_kernelColumnsReconstruct.setArg(1, dst);
-			//	int imageWidth = width;
-			//	int imageHeight = height;
-			//	int numWorkItemHeight = ceilToPower2(height/2+height%2+2);
-			//	int numGlobalItemsHeight = (int) ceil((ceil(((double)numWorkItemHeight)/2))/(numWorkItemHeight-2))*numWorkItemHeight;
-			//	int2 numWorkItems(1, numWorkItemHeight);
-			//	int2 numGlobalItems(imageWidth, numGlobalItemsHeight);
-			//	int2 imageRes (width, height);
-			//	initKernelConstMemory(imageRes);
-			//	m_kernelColumnsReconstruct.setArg(2, numWorkItemHeight*sizeof(float4), 0);
-			//	m_kernelColumnsReconstruct.setArg(3, m_constMemory);
-			//	m_queue->enqueueNDRangeKernel(m_kernelColumnsReconstruct, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
-			//}
-			//else
-			//{
-			//	cl::Image2DGL src, dst;
-			//	if (nValidTmp==-1)
-			//	{
-			//		src = imageColor;
-			//		dst = imageTmp[0];
-			//		nValidTmp = 0;
-			//	}
-			//	else if(nValidTmp==0)
-			//	{
-			//		src = imageTmp[0];
-			//		dst = imageTmp[1];
-			//		nValidTmp = 1;
-			//	}
-			//	else if(nValidTmp==1)
-			//	{
-			//		src = imageTmp[1];
-			//		dst = imageTmp[0];
-			//		nValidTmp = 0;
-			//	}
-			//	cl::size_t<3> zero;
-			//	zero[0] = 0;
-			//	zero[1] = 0;
-			//	zero[2] = 0;
-			//	cl::size_t<3> region;
-			//	region[0] = width;
-			//	region[1] = height;
-			//	region[2] = 1;
-			//	m_queue->enqueueCopyImage(src, dst, zero, zero, region);
-			//}
-
-			if ( width > 1)
+			if ( resLvl.x > 1)
 			{
-				cl::Image2DGL src,dst;
-				if (nValidTmp==-1)
-				{
-					src = imageColor;
-					dst = imageTmp[0];
-					nValidTmp = 0;
-				}
-				else if(nValidTmp==0)
-				{
-					src = imageTmp[0];
-					dst = imageTmp[1];
-					nValidTmp = 1;
-				}
-				else if(nValidTmp==1)
-				{
-					src = imageTmp[1];
-					dst = imageTmp[0];
-					nValidTmp = 0;
-				}
-				m_kernelLinesReconstruct.setArg(0, src);
-				m_kernelLinesReconstruct.setArg(1, dst);
-				int imageWidth = width;
-				int imageHeight = height;
-				int numWorkItemWidth = ceilToPower2(width/2+width%2+2);
-				int numGlobalItemsWidth = (int) ceil((ceil(((double)imageWidth)/2))/(numWorkItemWidth-2))*numWorkItemWidth;
+				imSwapper.setImages(m_kernelLinesReconstruct);
+
+				int numWorkItemWidth = getOptCountWorkItems(resLvl.x);
+				int numGlobalItemsWidth = numWorkItemWidth;
 				int2 numWorkItems(numWorkItemWidth, 1);
-				int2 numGlobalItems(numGlobalItemsWidth, imageHeight);
+				int2 numGlobalItems(numGlobalItemsWidth, resLvl.y);
 				m_kernelLinesReconstruct.setArg(2, numWorkItemWidth*sizeof(float4), 0);
-				int2 imageRes (width, height);
-				initKernelConstMemory(imageRes);
+				initKernelConstMemory(resLvl);
 				m_kernelLinesReconstruct.setArg(3, m_constMemory);
 				m_queue->enqueueNDRangeKernel(m_kernelLinesReconstruct, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
 			}
 			else
-			{
-				cl::Image2DGL src, dst;
-				if (nValidTmp==-1)
-				{
-					src = imageColor;
-					dst = imageTmp[0];
-					nValidTmp = 0;
-				}
-				else if(nValidTmp==0)
-				{
-					src = imageTmp[0];
-					dst = imageTmp[1];
-					nValidTmp = 1;
-				}
-				else if(nValidTmp==1)
-				{
-					src = imageTmp[1];
-					dst = imageTmp[0];
-					nValidTmp = 0;
-				}
-				cl::size_t<3> zero;
-				zero[0] = 0;
-				zero[1] = 0;
-				zero[2] = 0;
-				cl::size_t<3> region;
-				region[0] = width;
-				region[1] = height;
-				region[2] = 1;
-				m_queue->enqueueCopyImage(src, dst, zero, zero, region);
-			}
-		}
+				copyImage (imSwapper, resLvl);
+		}*/
 
 		static int start = GetTickCount();
 		static int nFrames = -1;
@@ -415,33 +272,16 @@ public:
 		printf("Time: %f\n", 1.0f/((actual-start)/1000.0f/(float)nFrames));
 
 		cl::Image2DGL src, dst;
-		if (nValidTmp==-1)
-		{
-			src = imageColor;
-			dst = imageResult;
-			nValidTmp = 0;
-		}
-		else if(nValidTmp==0)
-		{
-			src = imageTmp[0];
-			dst = imageResult;
-			nValidTmp = 1;
-		}
-		else if(nValidTmp==1)
-		{
-			src = imageTmp[1];
-			dst = imageResult;
-			nValidTmp = 0;
-		}
-		width = imageResult.getImageInfo<CL_IMAGE_WIDTH>();
-		height = imageResult.getImageInfo<CL_IMAGE_HEIGHT>();
+		imSwapper.getImages(src, dst);
+
+		dst = imageResult;
 		cl::size_t<3> zero;
 		zero[0] = 0;
 		zero[1] = 0;
 		zero[2] = 0;
 		cl::size_t<3> region;
-		region[0] = width;
-		region[1] = height;
+		region[0] = res.x;
+		region[1] = res.y;
 		region[2] = 1;
 		m_queue->enqueueCopyImage(src, dst, zero, zero, region);
 	}

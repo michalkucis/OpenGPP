@@ -14,7 +14,6 @@ typedef struct ConstMemory_
 	int2 textureResolution;
 	int2 megaTextureResolution; // #define MEGA_TEXTURE_RESOLUTION (texSize*2-2)
 	int2 halfTextureResolution;
-	int2 secondTextureExtension;
 } ConstMemory_t;
 
 typedef struct OftenUsedVars_
@@ -124,60 +123,18 @@ void saveElementForColumn(
 		writeTexel(out, vars, coord, f4);	
 }
 
-float4 loadElementForLineReconstruct(
-	__global read_only image2d_t in,
-	__constant ConstMemory_t* constMemory,
+int getColumn(__constant ConstMemory_t* constMemory,
 	OftenUsedVars_t* vars,
 	int offset)
 {
-	int nLine = get_global_id(1);
-	int nOffset = get_global_id(0) - get_group_id(0)*2 - 1 + 2;
-	int texSize = constMemory->halfTextureResolution.x + offset*constMemory->secondTextureExtension.x;
-	int absOffset = abs(nOffset);
-	int clampedOffset = absOffset - (absOffset/texSize) * (absOffset-texSize+1) * 2; 
+	int mega = constMemory->megaTextureResolution.x;
+	int nColumn = get_global_id(0) - get_group_id(0)*2 - 1;
 	
-	int nColumn = clampedOffset + offset * constMemory->halfTextureResolution.x;
-	int2 coord = {nColumn, nLine};
-
-	//return readTexel(in, constMemory, vars, coord);	
-	float4 f4 = {absOffset,0,0,0};
-	return f4;
-}
-
-/*
-float4 loadElementForLineReconstruct(
-	__global read_only image2d_t in,
-	__constant ConstMemory_t* constMemory,
-	OftenUsedVars_t* vars,
-	int offset)
-{
-	int nLine = get_global_id(1);
-	int nOffset = get_global_id(0) - get_group_id(0)*2 - 1 - 2;
-	int texSize = constMemory->halfTextureResolution.x + offset*constMemory->secondTextureExtension.x;
-	nOffset = abs(nOffset);
-	nOffset -= (nOffset/texSize) * (nOffset-texSize+1) * 2; 
-	
-	int nColumn = nOffset + offset * constMemory->halfTextureResolution.x;
-	int2 coord = {abs(nColumn), nLine};
-
-	//return readTexel(in, constMemory, vars, coord);	
-	float4 f4 = {nOffset,0,0,0};
-	return f4;
-}
-*/
-void saveElementForLineReconstruct(
-	__global write_only image2d_t out,
-	__constant ConstMemory_t* constMemory,
-	OftenUsedVars_t* vars,
-	int offset,
-	float4 f4)
-{
-	int nLine = get_global_id(1);
-	int nColumn = get_global_id(0)*2 + offset - 2 - get_group_id(0)*4;
-		
-	int2 coord = {nColumn, nLine};
-	if (get_local_id(0) >= 1 && get_local_id(0)+1 < get_local_size(0))
-		writeTexel(out, vars, coord, f4);	
+	nColumn = nColumn*2 + offset;
+	nColumn = abs(nColumn);
+	nColumn %= mega;
+	nColumn = nColumn >= vars->textureResolution.x ? mega - nColumn : nColumn;
+	return nColumn;
 }
 
 
@@ -188,14 +145,18 @@ float4 loadElementForColumnReconstruct(
 	int offset)
 {
 	int nColumn = get_global_id(0);
-	int nOffset = abs(convert_int(get_global_id(1) - 1 - get_group_id(1)*2));
+/*	int nOffset = abs(convert_int(get_global_id(1) - 1 - get_group_id(1)*2));
 	int texSize = constMemory->halfTextureResolution.y + offset*constMemory->secondTextureExtension.y;
 	nOffset -= (nOffset/texSize) * (nOffset-texSize+1) * 2;
 	int nLine = nOffset + offset * constMemory->halfTextureResolution.y;
-	int2 coord = {nColumn, nLine};
+	*/
 
+	int nLine = 10;
+	int2 coord = {nColumn, nLine};
+	
 	return readTexel(in, constMemory, vars, coord);	
 }
+
 
 void saveElementForColumnReconstruct(
 	__global write_only image2d_t out,
@@ -269,7 +230,6 @@ __kernel void linesTransform(
 	f1 += c * (f0 + f2);
 	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
 
-
 	
 	f1 *= INV_ZETA;
 	f2 *= ZETA;
@@ -284,7 +244,7 @@ __kernel void linesTransform(
 
 
 
-
+/*
 __kernel void linesReconstruct(
 	__global read_only image2d_t in,
 	__global write_only image2d_t out,
@@ -296,10 +256,10 @@ __kernel void linesReconstruct(
 	initOftenUsedVars(&vars, constMemory);
 	
 	
-	float4 f1 = loadElementForLineReconstruct(in, constMemory, &vars, 0);
+	float4 f1 = loadElementForLineReconstructA(in, constMemory, &vars);
 	float4 f2 = loadElementForLineReconstruct(in, constMemory, &vars, 1);
 	
-	/*
+	
 	f1 *= ZETA;
 	f2 *= INV_ZETA;
 
@@ -324,12 +284,91 @@ __kernel void linesReconstruct(
 	float4 f3 = loadElement(localMemory, myID, maxID, 1);
 	f2 -= c * (f1 + f3);
 	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
-	*/
-		
+	
+
 	saveElementForLineReconstruct(out, constMemory, &vars, 0, f1);
 	saveElementForLineReconstruct(out, constMemory, &vars, 1, f2);
 }
+*/
 
+
+float4 loadElementForLineReconstruct(
+	__global read_only image2d_t in,
+	__constant ConstMemory_t* constMemory,
+	OftenUsedVars_t* vars,
+	int offset)
+{
+	int nLine = get_global_id(1);
+	int nColumn = getColumn(constMemory, vars, offset);
+	int nAddr = nColumn / 2 + offset*constMemory->halfTextureResolution.x;
+	int2 coord = {nAddr, nLine};
+
+	return readTexel(in, constMemory, vars, coord);	
+	//float4 f4 = {nAddr,0,0,0};
+	//return f4;
+}
+
+
+void saveElementForLineReconstruct(
+	__global write_only image2d_t out,
+	__constant ConstMemory_t* constMemory,
+	OftenUsedVars_t* vars,
+	int offset,
+	float4 f4)
+{
+	int nLine = get_global_id(1);
+	int nColumn = get_global_id(0)*2 + offset - 2 - get_group_id(0)*4;
+		
+	int2 coord = {nColumn, nLine};
+	if (get_local_id(0) >= 1 && get_local_id(0)+1 < get_local_size(0))
+		writeTexel(out, vars, coord, f4);	
+}
+
+__kernel void linesReconstruct(
+	__global read_only image2d_t in,
+	__global write_only image2d_t out,
+
+	__local float4* localMemory,
+	__constant ConstMemory_t* constMemory)
+{
+	OftenUsedVars_t vars;
+	initOftenUsedVars(&vars, constMemory);
+	
+	
+	float4 f1 = loadElementForLineReconstruct(in, constMemory, &vars, 0);
+	float4 f2 = loadElementForLineReconstruct(in, constMemory, &vars, 1);
+	
+	
+	f1 *= ZETA;
+	f2 *= INV_ZETA;
+
+	
+	int myID = get_local_id(0);
+	int maxID = get_local_size(0);
+	
+	float c;
+	
+
+	c = BETA;
+	saveElement(localMemory, myID, f2);
+	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
+	float4 f0 = loadElement(localMemory, myID, maxID, -1);
+	f1 -= c * (f0 + f2);
+	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
+
+
+	c = ALPHA;
+	saveElement(localMemory, myID, f1);
+	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
+	float4 f3 = loadElement(localMemory, myID, maxID, 1);
+	f2 -= c * (f1 + f3);
+	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
+	
+
+
+	saveElementForLineReconstruct(out, constMemory, &vars, 0, f1);
+	saveElementForLineReconstruct(out, constMemory, &vars, 1, f2);
+}
 
 
 __kernel void columnsTransform(
