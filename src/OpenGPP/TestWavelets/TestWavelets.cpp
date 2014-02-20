@@ -123,13 +123,22 @@ protected:
 		error0(ERR_STRUCT, "DON'T CALL ME BABY!!!");
 	}
 public:
+	Ptr<GLTexture2D> texRes;
+	Ptr<GLTexture2D> texTmp1;
+	Ptr<GLTexture2D> texTmp2;
+
 	Ptr<GLTexture2D> process (Ptr<GLTexture2D> texColor, Ptr<GLTexture2D> texDepth, Ptr<GLTextureEnvMap> texEnvMap)
 	{
 		try 
 		{
-			Ptr<GLTexture2D> texRes = createTexTarget();
-			Ptr<GLTexture2D> texTmp1 = m_factoryTexRGB->createProduct();
-			Ptr<GLTexture2D> texTmp2 = m_factoryTexRGB->createProduct();
+			static bool bInit = false;
+			if (! bInit)
+			{
+				bInit = true;
+				texRes = createTexTarget();
+				texTmp1 = m_factoryTexRGB->createProduct();
+				texTmp2 = m_factoryTexRGB->createProduct();
+			}
 
 			glFlush();
 			cl::Image2DGL imageColor = getImage2DGL(*m_context, CL_MEM_READ_ONLY, texColor);
@@ -187,7 +196,7 @@ public:
 	{
 		int count = resolution/2 + resolution%2 + 2;
 		int mask = 32-1;
-		count = count & (~mask) + (count&mask) ? 32 : 1;
+		count = (count & (~mask)) + ((count&mask) ? 32 : 1);
 		return count;
 	}
 
@@ -213,15 +222,11 @@ public:
 	{	
 		ImageSwapper imSwapper (imageColor, imageTmp);
 		int2 res (imageResult.getImageInfo<CL_IMAGE_WIDTH>(), imageResult.getImageInfo<CL_IMAGE_HEIGHT>());
-
+		
 		// transform:
 		int countLvls = getUsefulCountLvls(res);
-		int n = 11;
-		for (int i = 10; i < countLvls; i++)
+		for (int i = 0; i < countLvls; i++)
 		{
-			if (! n--)
-				break;
-
 			int2 resLvl = getLvlResolution(res, i);
 			if (resLvl.x > 1)
 			{
@@ -238,16 +243,48 @@ public:
 			}
 			else
 				copyImage (imSwapper, resLvl);
+				
+			if (resLvl.y > 1)
+			{
+				imSwapper.setImages(m_kernelColumnsTransform);
+
+				int numWorkItemHeight = getOptCountWorkItems(resLvl.y);
+				int numGlobalItemsHeight = numWorkItemHeight;
+				int2 numWorkItems(1, numWorkItemHeight);
+				int2 numGlobalItems(resLvl.x, numGlobalItemsHeight);
+				m_kernelColumnsTransform.setArg(2, numWorkItemHeight*sizeof(float4), 0);
+				initKernelConstMemory(resLvl);
+				m_kernelColumnsTransform.setArg(3, m_constMemory);
+				m_queue->enqueueNDRangeKernel(m_kernelColumnsTransform, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
+			}
+			else
+				copyImage (imSwapper, resLvl);
 		}
 
 
 
 		// reconstruct:
-		//for (int i = getUsefulCountLvls()-1; i >= 0; i--)
-		/*for (int i = 9; i >= 0; i--)
+		for (int i = getUsefulCountLvls(res)-1; i >= 0; i--)
+		//for (int i = 4; i >= 0; i--)
 		{
 			int2 resLvl (getLvlResolution(res, i));
 
+			if ( resLvl.y > 1)
+			{
+				imSwapper.setImages(m_kernelColumnsReconstruct);
+
+				int numWorkItemHeight = getOptCountWorkItems(resLvl.y);
+				int numGlobalItemsHeight = numWorkItemHeight;
+				int2 numWorkItems(1,numWorkItemHeight);
+				int2 numGlobalItems(resLvl.x, numWorkItemHeight);
+				m_kernelColumnsReconstruct.setArg(2, numWorkItemHeight*sizeof(float4), 0);
+				initKernelConstMemory(resLvl);
+				m_kernelColumnsReconstruct.setArg(3, m_constMemory);
+				m_queue->enqueueNDRangeKernel(m_kernelColumnsReconstruct, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
+			}
+			else
+				copyImage (imSwapper, resLvl);
+			
 			if ( resLvl.x > 1)
 			{
 				imSwapper.setImages(m_kernelLinesReconstruct);
@@ -263,13 +300,8 @@ public:
 			}
 			else
 				copyImage (imSwapper, resLvl);
-		}*/
-
-		static int start = GetTickCount();
-		static int nFrames = -1;
-		nFrames++;
-		int actual = GetTickCount();
-		printf("Time: %f\n", 1.0f/((actual-start)/1000.0f/(float)nFrames));
+		}
+		
 
 		cl::Image2DGL src, dst;
 		imSwapper.getImages(src, dst);
@@ -284,6 +316,13 @@ public:
 		region[1] = res.y;
 		region[2] = 1;
 		m_queue->enqueueCopyImage(src, dst, zero, zero, region);
+		
+
+		static int start = GetTickCount();
+		static int nFrames = -1;
+		nFrames++;
+		int actual = GetTickCount();
+		printf("Time: %f\n", 1.0f/((actual-start)/1000.0f/(float)nFrames));
 	}
 
 	Ptr<GLTexture2D> createTexTarget()
@@ -436,12 +475,12 @@ public:
 		m_pp->m_vecEffects.pushBack(new EffectWaveletsCool(new SharedObjectsFactory(resolution), new EffectCLObjectsFactory));
 		m_pp->m_vecEffects.pushBack(new EffectRenderToScreen(0,0,1,1));
 		m_pp->m_vecEffects.pushBack(new EffectCopyColorAndDepthMaps(new SharedObjectsFactory(resolution)));
-		m_pp->m_vecEffects.pushBack(new EffectSaveToMatlabASCII("out.txt"));
+		//m_pp->m_vecEffects.pushBack(new EffectSaveToMatlabASCII("out.txt"));
 	}
 	void render()
 	{
 		m_pp->process();
-		sendQuit();
+		//sendQuit();
 	}
 	void clearData ()
 	{		
