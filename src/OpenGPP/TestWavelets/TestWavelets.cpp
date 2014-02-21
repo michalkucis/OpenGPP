@@ -90,7 +90,6 @@ public:
 		m_hostConstMem.megaTextureResolution = imageRes*2-2;
 		m_hostConstMem.halfTextureResolution = imageRes/2+imageRes%2;
 
-		m_constMemory = cl::Buffer(*m_context, CL_MEM_READ_ONLY, sizeof(m_hostConstMem), &m_hostConstMem);
 		m_queue->enqueueWriteBuffer(m_constMemory, false, 0, sizeof(m_hostConstMem), &m_hostConstMem);
 	}
 	EffectWaveletsCool(Ptr<GLTexturesRGBFactory> factoryRGB, Ptr<GLTexturesRedFactory> factoryRed, Ptr<EffectCLObjectsFactory> factory): 
@@ -100,6 +99,8 @@ public:
 		m_kernelColumnsTransform = createKernel(*m_context, "kernels\\waveletsCool.cl", "columnsTransform");
 		m_kernelLinesReconstruct = createKernel(*m_context, "kernels\\waveletsCool.cl", "linesReconstruct");
 		m_kernelColumnsReconstruct = createKernel(*m_context, "kernels\\waveletsCool.cl", "columnsReconstruct");
+
+		m_constMemory = cl::Buffer(*m_context, CL_MEM_READ_ONLY, sizeof(m_hostConstMem), &m_hostConstMem);
 	}
 
 	EffectWaveletsCool(Ptr<SharedObjectsFactory> sof, Ptr<EffectCLObjectsFactory> factory): 
@@ -109,6 +110,8 @@ public:
 		m_kernelColumnsTransform = createKernel(*m_context, "kernels\\waveletsCool.cl", "columnsTransform");
 		m_kernelLinesReconstruct = createKernel(*m_context, "kernels\\waveletsCool.cl", "linesReconstruct");
 		m_kernelColumnsReconstruct = createKernel(*m_context, "kernels\\waveletsCool.cl", "columnsReconstruct");
+
+		m_constMemory = cl::Buffer(*m_context, CL_MEM_READ_ONLY, sizeof(m_hostConstMem), &m_hostConstMem);
 	}
 protected:
 	int ceilToPower2(int x)
@@ -126,7 +129,12 @@ public:
 	Ptr<GLTexture2D> texRes;
 	Ptr<GLTexture2D> texTmp1;
 	Ptr<GLTexture2D> texTmp2;
+	cl::Image2DGL imageTmp[2];
+	cl::Image2DGL imageRes;
 
+
+	cl::Image2DGL imageColor;
+	
 	Ptr<GLTexture2D> process (Ptr<GLTexture2D> texColor, Ptr<GLTexture2D> texDepth, Ptr<GLTextureEnvMap> texEnvMap)
 	{
 		try 
@@ -138,35 +146,31 @@ public:
 				texRes = createTexTarget();
 				texTmp1 = m_factoryTexRGB->createProduct();
 				texTmp2 = m_factoryTexRGB->createProduct();
+				imageTmp[0] = getImage2DGL(*m_context, CL_MEM_READ_WRITE, texTmp1);
+				imageTmp[1] = getImage2DGL(*m_context, CL_MEM_READ_WRITE, texTmp2);
+				imageRes = getImage2DGL(*m_context, CL_MEM_WRITE_ONLY, texRes);
+			
+				imageColor = getImage2DGL(*m_context, CL_MEM_READ_ONLY, texColor);
 			}
 
 			glFlush();
-			cl::Image2DGL imageColor = getImage2DGL(*m_context, CL_MEM_READ_ONLY, texColor);
-			cl::Image2DGL imageDepth;
-			if (requireDepth())
-				imageDepth = getImage2DGL(*m_context, CL_MEM_READ_ONLY, texDepth);
-			cl::Image2DGL imageRes = getImage2DGL(*m_context, CL_MEM_WRITE_ONLY, texRes);
-			cl::Image2DGL imageTmp[2] = {
-				getImage2DGL(*m_context, CL_MEM_READ_WRITE, texTmp1),
-				getImage2DGL(*m_context, CL_MEM_READ_WRITE, texTmp2)};
-
+					
 				std::vector<cl::Memory> vecGLMems;
 				vecGLMems.push_back(imageColor);
-				if (requireDepth())
-					vecGLMems.push_back(imageDepth);
 				for (int i = 0; i < 2; i++)
 					vecGLMems.push_back(imageTmp[i]);
 
 				vecGLMems.push_back(imageRes);
 				m_queue->enqueueAcquireGLObjects(&vecGLMems);
-
-				runKernels(imageColor, imageDepth, texEnvMap, imageRes, imageTmp);
+				cl::Image2DGL imageNull;
+				runKernels(imageColor, imageNull, texEnvMap, imageRes, imageTmp);
 
 				m_queue->enqueueReleaseGLObjects(&vecGLMems);
 				m_queue->flush();
 
 				return texRes;
 		} catchCLError;
+
 	}
 
 	int2 getLvlResolution (int2 lvl0, int lvl)
@@ -316,13 +320,6 @@ public:
 		region[1] = res.y;
 		region[2] = 1;
 		m_queue->enqueueCopyImage(src, dst, zero, zero, region);
-		
-
-		static int start = GetTickCount();
-		static int nFrames = -1;
-		nFrames++;
-		int actual = GetTickCount();
-		printf("Time: %f\n", 1.0f/((actual-start)/1000.0f/(float)nFrames));
 	}
 
 	Ptr<GLTexture2D> createTexTarget()
@@ -474,13 +471,19 @@ public:
 		m_pp->m_input = new InputLoadFromSingleFileOpenEXR("exrChangeLightIntensity\\img_light1_lamp250_pos0.exr");
 		m_pp->m_vecEffects.pushBack(new EffectWaveletsCool(new SharedObjectsFactory(resolution), new EffectCLObjectsFactory));
 		m_pp->m_vecEffects.pushBack(new EffectRenderToScreen(0,0,1,1));
-		m_pp->m_vecEffects.pushBack(new EffectCopyColorAndDepthMaps(new SharedObjectsFactory(resolution)));
+		//m_pp->m_vecEffects.pushBack(new EffectCopyColorAndDepthMaps(new SharedObjectsFactory(resolution)));
 		//m_pp->m_vecEffects.pushBack(new EffectSaveToMatlabASCII("out.txt"));
 	}
 	void render()
 	{
 		m_pp->process();
 		//sendQuit();
+
+		static int start = GetTickCount();
+		static int nFrames = -1;
+		nFrames++;
+		int actual = GetTickCount();
+		printf("Time: %f\n", 1.0f/((actual-start)/1000.0f/(float)nFrames));
 	}
 	void clearData ()
 	{		

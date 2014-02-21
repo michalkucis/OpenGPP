@@ -95,9 +95,13 @@ int getColumn(__constant ConstMemory_t* constMemory,
 void saveElement(
 	__local float4* localMemory, 
 	int myID,
+	int maxID,
+	int offset,
 	float4 f)
 {
-	localMemory[myID] = f;
+	int id = myID + offset + maxID;
+	id %= maxID;
+	localMemory[id] = f;
 }
 
 
@@ -139,7 +143,7 @@ void saveElementForLine(
 	float4 f4)
 {
 	int nLine = get_global_id(1);
-	int nOffset = get_global_id(0) - 1 - get_group_id(0)*2;;
+	int nOffset = get_global_id(0) - 1 - get_group_id(0)*2;
 	int nColumn = nOffset + offset * constMemory->halfTextureResolution.x;
 	int2 coord = {nColumn, nLine};
 
@@ -170,19 +174,17 @@ __kernel void linesTransform(
 
 
 	c = ALPHA;
-	saveElement(localMemory, myID, f1);
-	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
+	saveElement(localMemory, myID,  maxID, 0, f1);
+	barrier(CLK_LOCAL_MEM_FENCE);
 	float4 f3 = loadElement(localMemory, myID, maxID, 1);
 	f2 += c * (f1 + f3);
-	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
-
+	
 	c = BETA;
-	saveElement(localMemory, myID, f2);
-	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
-	float4 f0 = loadElement(localMemory, myID, maxID, -1);
+	saveElement(localMemory, myID,  maxID, 1, f2);
+	barrier(CLK_LOCAL_MEM_FENCE);
+	float4 f0 = loadElement(localMemory, myID, maxID, 0);
 	f1 += c * (f0 + f2);
-	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
-
+	
 	
 	f1 *= INV_ZETA;
 	f2 *= ZETA;
@@ -255,19 +257,17 @@ __kernel void linesReconstruct(
 	
 
 	c = BETA;
-	saveElement(localMemory, myID, f2);
-	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
+	saveElement(localMemory, myID,  maxID, 0, f2);
+	barrier(CLK_LOCAL_MEM_FENCE);
 	float4 f0 = loadElement(localMemory, myID, maxID, -1);
 	f1 -= c * (f0 + f2);
-	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
-
+	
 
 	c = ALPHA;
-	saveElement(localMemory, myID, f1);
-	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
-	float4 f3 = loadElement(localMemory, myID, maxID, 1);
+	saveElement(localMemory, myID,  maxID, -1, f1);
+	barrier(CLK_LOCAL_MEM_FENCE);
+	float4 f3 = loadElement(localMemory, myID, maxID, 0);
 	f2 -= c * (f1 + f3);
-	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
 	
 
 
@@ -334,19 +334,17 @@ __kernel void columnsTransform(
 
 
 	c = ALPHA;
-	saveElement(localMemory, myID, f1);
-	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
+	saveElement(localMemory, myID, maxID, 0, f1);
+	barrier(CLK_LOCAL_MEM_FENCE);
 	float4 f3 = loadElement(localMemory, myID, maxID, 1);
 	f2 += c * (f1 + f3);
-	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
-
+	
 	c = BETA;
-	saveElement(localMemory, myID, f2);
-	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
-	float4 f0 = loadElement(localMemory, myID, maxID, -1);
+	saveElement(localMemory, myID, maxID, 1, f2);
+	barrier(CLK_LOCAL_MEM_FENCE);
+	float4 f0 = loadElement(localMemory, myID, maxID, 0);
 	f1 += c * (f0 + f2);
-	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
-
+	
 	
 	f1 *= INV_ZETA;
 	f2 *= ZETA;
@@ -418,20 +416,18 @@ __kernel void columnsReconstruct(
 	
 
 	float c = BETA;
-	saveElement(localMemory, myID, f2);
-	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
+	saveElement(localMemory, myID, maxID, 0, f2);
+	barrier(CLK_LOCAL_MEM_FENCE);
 	float4 f0 = loadElement(localMemory, myID, maxID, -1);
 	f1 -= c * (f0 + f2);
-	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
-
+	
 
 	c = ALPHA;
-	saveElement(localMemory, myID, f1);
-	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
-	float4 f3 = loadElement(localMemory, myID, maxID, 1);
+	saveElement(localMemory, myID, maxID, -1, f1);
+	barrier(CLK_LOCAL_MEM_FENCE);
+	float4 f3 = loadElement(localMemory, myID, maxID, 0);
 	f2 -= c * (f1 + f3);
-	barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE);
-
+	
 	
 	saveElementForColumnReconstruct(out, constMemory, &vars, 0, f1);
 	saveElementForColumnReconstruct(out, constMemory, &vars, 1, f2);
