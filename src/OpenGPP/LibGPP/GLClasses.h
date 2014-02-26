@@ -9,7 +9,8 @@
 #include "Vector.h"
 #include "Error.h"
 
-#define checkGLError() {GLenum err = glGetError (); if (err != GL_NO_ERROR) error0(ERR_OPENGL, (string) (const char*) gluErrorString(err));}
+void checkGLError();
+
 
 void printGLInfo ();
 

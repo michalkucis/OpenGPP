@@ -9,6 +9,13 @@
 #include <fstream>
 #include <sstream>
 
+void checkGLError()
+{
+	GLenum err = glGetError (); 
+	if (err != GL_NO_ERROR) 
+		error0(ERR_OPENGL, (string) (const char*) gluErrorString(err));
+}
+
 void printGLInfo()
 {
 	std::cout << "OpenGL vendor:   " << glGetString(GL_VENDOR) << std::endl;

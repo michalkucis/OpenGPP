@@ -1,12 +1,54 @@
 
 // CONSTANTS:
-#define ALPHA (-0.5f)
-#define BETA (0.25f)
+#define CDF53_ALPHA (-0.5f)
+#define CDF53_BETA (0.25f)
+#define CDF53_ZETA (0.70710678118f)
+#define CDF53_INVZETA (1.41421356237f)
 
-#define ZETA (0.70710678118f)
-#define INV_ZETA (1.41421356237f)
+
+#define CDF97_ALPHA (-0.5f)
+#define CDF97_BETA (0.25f)
+#define CDF97_GAMMA (-0.125f)
+#define CDF97_DELTA (0.0625f)
+#define CDF97_ZETA (0.70710678118f)
+#define CDF97_INVZETA (1.41421356237f)
 
 
+#define WCDF53_EPSILON (0.00001f)
+#define WCDF53_ALPHA (1.2f)
+
+
+#define USE_SINGLE_CHANNEL
+
+
+
+#ifndef USE_SINGLE_CHANNEL
+typedef float4 element_t;
+#else
+typedef float element_t;
+#endif
+element_t colorToElement(float4 color)
+{
+#ifdef USE_SINGLE_CHANNEL
+	return color.x;
+#else
+	return color;
+#endif
+}
+float4 elementToColor(element_t channel)
+{
+#ifdef USE_SINGLE_CHANNEL
+	float4 color = {channel, channel, channel, channel};
+	return color;
+#else
+	return channel;
+#endif
+}
+
+float absf (float x)
+{
+	return x < 0 ? -x : x;
+}
 
 
 typedef struct ConstMemory_
@@ -30,7 +72,7 @@ void initOftenUsedVars(
 
 
 
-float4 readTexel(
+element_t readTexel(
 	__global read_only image2d_t in, 
 	__constant ConstMemory_t* constMemory,
 	OftenUsedVars_t* vars,
@@ -42,7 +84,8 @@ float4 readTexel(
 
 	sampler_t s = CLK_ADDRESS_NONE;
 	float4 color = read_imagef(in, s, coord);
-	return color;
+
+	return colorToElement(color);
 }
 
 
@@ -51,16 +94,16 @@ void writeTexel(
 	__global write_only image2d_t out,
 	OftenUsedVars_t* vars,
 	int2 coord,
-	float4 value)
+	element_t element)
 {
 	int2 texRes = vars->textureResolution;
 	if ((coord.x < texRes.x) && (coord.y < texRes.y))
-		write_imagef(out, coord, value);
+		write_imagef(out, coord, elementToColor(element));
 }
 
 
 
-int getLine(__constant ConstMemory_t* constMemory,
+int cdf53getLine(__constant ConstMemory_t* constMemory,
 	OftenUsedVars_t* vars,
 	int offset)
 {
@@ -76,7 +119,7 @@ int getLine(__constant ConstMemory_t* constMemory,
 
 
 
-int getColumn(__constant ConstMemory_t* constMemory,
+int cdf53getColumn(__constant ConstMemory_t* constMemory,
 	OftenUsedVars_t* vars,
 	int offset)
 {
@@ -93,11 +136,11 @@ int getColumn(__constant ConstMemory_t* constMemory,
 
 
 void saveElement(
-	__local float4* localMemory, 
+	__local element_t* localMemory, 
 	int myID,
 	int maxID,
 	int offset,
-	float4 f)
+	element_t f)
 {
 	int id = myID + offset + maxID;
 	id %= maxID;
@@ -105,8 +148,8 @@ void saveElement(
 }
 
 
-float4 loadElement(
-	__local float4* localMemory,
+element_t loadElement(
+	__local element_t* localMemory,
 	int myID, 
 	int maxID,
 	int offset)
@@ -121,7 +164,7 @@ float4 loadElement(
 
 
 
-float4 loadElementForLine(
+element_t cdf53loadElementForLine(
 	__global read_only image2d_t in,
 	__constant ConstMemory_t* constMemory,
 	OftenUsedVars_t* vars,
@@ -135,12 +178,12 @@ float4 loadElementForLine(
 
 
 
-void saveElementForLine(
+void cdf53saveElementForLine(
 	__global write_only image2d_t out,
 	__constant ConstMemory_t* constMemory,
 	OftenUsedVars_t* vars,
 	int offset,
-	float4 f4)
+	element_t e)
 {
 	int nLine = get_global_id(1);
 	int nOffset = get_global_id(0) - 1 - get_group_id(0)*2;
@@ -148,24 +191,55 @@ void saveElementForLine(
 	int2 coord = {nColumn, nLine};
 
 	if (get_local_id(0) >= 1 && get_local_id(0)+1 < get_local_size(0) && nOffset < constMemory->halfTextureResolution.x)
-		writeTexel(out, vars, coord, f4);	
+		writeTexel(out, vars, coord, e);	
+}
+
+
+void cdf53saveWeightForLine(
+	__global write_only image2d_t out,
+	__constant ConstMemory_t* constMemory,
+	OftenUsedVars_t* vars,
+	int offset,
+	element_t e)
+{
+	int nLine = get_global_id(1);
+	int nColumn = get_global_id(0)*2 + offset - 2 - get_group_id(0)*4;
+	int2 coord = {nColumn, nLine};
+
+	if (get_local_id(0) >= 1 && get_local_id(0)+1 < get_local_size(0))
+		writeTexel(out, vars, coord, e);	
 }
 
 
 
-__kernel void linesTransform(
+void cdf53saveWeightForColumn(
+	__global write_only image2d_t out,
+	__constant ConstMemory_t* constMemory,
+	OftenUsedVars_t* vars,
+	int offset,
+	element_t e)
+{
+	int nLine = get_global_id(1)*2 + offset - 2 - get_group_id(1)*4;
+	int nColumn = get_global_id(0);
+	int2 coord = {nColumn, nLine};
+
+	if (get_local_id(0) >= 1 && get_local_id(0)+1 < get_local_size(0))
+		writeTexel(out, vars, coord, e);	
+}
+
+__kernel void cdf53linesTransform(
 	__global read_only image2d_t in,
 	__global write_only image2d_t out,
 
-	__local float4* localMemory,
+	__local element_t* localMemory,
 	__constant ConstMemory_t* constMemory)
 {
 	OftenUsedVars_t vars;
 	initOftenUsedVars(&vars, constMemory);
 	
 
-	float4 f1 = loadElementForLine(in, constMemory, &vars, 0);
-	float4 f2 = loadElementForLine(in, constMemory, &vars, 1);
+	element_t f1 = cdf53loadElementForLine(in, constMemory, &vars, 0);
+	element_t f2 = cdf53loadElementForLine(in, constMemory, &vars, 1);
 	
 
 	int myID = get_local_id(0);
@@ -173,25 +247,25 @@ __kernel void linesTransform(
 	float c;
 
 
-	c = ALPHA;
+	c = CDF53_ALPHA;
 	saveElement(localMemory, myID,  maxID, 0, f1);
 	barrier(CLK_LOCAL_MEM_FENCE);
-	float4 f3 = loadElement(localMemory, myID, maxID, 1);
+	element_t f3 = loadElement(localMemory, myID, maxID, 1);
 	f2 += c * (f1 + f3);
 	
-	c = BETA;
+	c = CDF53_BETA;
 	saveElement(localMemory, myID,  maxID, 1, f2);
 	barrier(CLK_LOCAL_MEM_FENCE);
-	float4 f0 = loadElement(localMemory, myID, maxID, 0);
+	element_t f0 = loadElement(localMemory, myID, maxID, 0);
 	f1 += c * (f0 + f2);
 	
 	
-	f1 *= INV_ZETA;
-	f2 *= ZETA;
+	f1 *= CDF53_INVZETA;
+	f2 *= CDF53_ZETA;
 	
 	
-	saveElementForLine(out, constMemory, &vars, 0, f1);
-	saveElementForLine(out, constMemory, &vars, 1, f2);
+	cdf53saveElementForLine(out, constMemory, &vars, 0, f1);
+	cdf53saveElementForLine(out, constMemory, &vars, 1, f2);
 }
 
 
@@ -201,14 +275,14 @@ __kernel void linesTransform(
 
 
 
-float4 loadElementForLineReconstruct(
+element_t cdf53loadElementForLineReconstruct(
 	__global read_only image2d_t in,
 	__constant ConstMemory_t* constMemory,
 	OftenUsedVars_t* vars,
 	int offset)
 {
 	int nLine = get_global_id(1);
-	int nColumn = getColumn(constMemory, vars, offset);
+	int nColumn = cdf53getColumn(constMemory, vars, offset);
 	int nAddr = nColumn / 2 + offset*constMemory->halfTextureResolution.x;
 	int2 coord = {nAddr, nLine};
 
@@ -216,38 +290,39 @@ float4 loadElementForLineReconstruct(
 }
 
 
-void saveElementForLineReconstruct(
+void cdf53saveElementForLineReconstruct(
 	__global write_only image2d_t out,
 	__constant ConstMemory_t* constMemory,
 	OftenUsedVars_t* vars,
 	int offset,
-	float4 f4)
+	element_t e)
 {
 	int nLine = get_global_id(1);
 	int nColumn = get_global_id(0)*2 + offset - 2 - get_group_id(0)*4;
 		
 	int2 coord = {nColumn, nLine};
 	if (get_local_id(0) >= 1 && get_local_id(0)+1 < get_local_size(0))
-		writeTexel(out, vars, coord, f4);	
+		writeTexel(out, vars, coord, e);	
 }
 
-__kernel void linesReconstruct(
+
+__kernel void cdf53linesReconstruct(
 	__global read_only image2d_t in,
 	__global write_only image2d_t out,
 
-	__local float4* localMemory,
+	__local element_t* localMemory,
 	__constant ConstMemory_t* constMemory)
 {
 	OftenUsedVars_t vars;
 	initOftenUsedVars(&vars, constMemory);
 	
 	
-	float4 f1 = loadElementForLineReconstruct(in, constMemory, &vars, 0);
-	float4 f2 = loadElementForLineReconstruct(in, constMemory, &vars, 1);
+	element_t f1 = cdf53loadElementForLineReconstruct(in, constMemory, &vars, 0);
+	element_t f2 = cdf53loadElementForLineReconstruct(in, constMemory, &vars, 1);
 	
 	
-	f1 *= ZETA;
-	f2 *= INV_ZETA;
+	f1 *= CDF53_ZETA;
+	f2 *= CDF53_INVZETA;
 
 	
 	int myID = get_local_id(0);
@@ -256,23 +331,22 @@ __kernel void linesReconstruct(
 	float c;
 	
 
-	c = BETA;
+	c = CDF53_BETA;
 	saveElement(localMemory, myID,  maxID, 0, f2);
 	barrier(CLK_LOCAL_MEM_FENCE);
-	float4 f0 = loadElement(localMemory, myID, maxID, -1);
+	element_t f0 = loadElement(localMemory, myID, maxID, -1);
 	f1 -= c * (f0 + f2);
 	
 
-	c = ALPHA;
+	c = CDF53_ALPHA;
 	saveElement(localMemory, myID,  maxID, -1, f1);
 	barrier(CLK_LOCAL_MEM_FENCE);
-	float4 f3 = loadElement(localMemory, myID, maxID, 0);
+	element_t f3 = loadElement(localMemory, myID, maxID, 0);
 	f2 -= c * (f1 + f3);
 	
 
-
-	saveElementForLineReconstruct(out, constMemory, &vars, 0, f1);
-	saveElementForLineReconstruct(out, constMemory, &vars, 1, f2);
+	cdf53saveElementForLineReconstruct(out, constMemory, &vars, 0, f1);
+	cdf53saveElementForLineReconstruct(out, constMemory, &vars, 1, f2);
 }
 
 
@@ -282,7 +356,7 @@ __kernel void linesReconstruct(
 
 
 
-float4 loadElementForColumn(
+element_t cdf53loadElementForColumn(
 	__global read_only image2d_t in,
 	__constant ConstMemory_t* constMemory,
 	OftenUsedVars_t* vars,
@@ -296,12 +370,12 @@ float4 loadElementForColumn(
 
 
 
-void saveElementForColumn(
+void cdf53saveElementForColumn(
 	__global write_only image2d_t out,
 	__constant ConstMemory_t* constMemory,
 	OftenUsedVars_t* vars,
 	int offset,
-	float4 f4)
+	element_t e)
 {
 	int nColumn = get_global_id(0);
 	int nOffset = get_global_id(1) - 1 - get_group_id(1)*2;;
@@ -309,23 +383,23 @@ void saveElementForColumn(
 		
 	int2 coord = {nColumn, nLine};
 	if (get_local_id(1) >= 1 && get_local_id(1)+1 < get_local_size(1) && nOffset < constMemory->halfTextureResolution.y)
-		writeTexel(out, vars, coord, f4);	
+		writeTexel(out, vars, coord, e);	
 }
 
 
-__kernel void columnsTransform(
+__kernel void cdf53columnsTransform(
 	__global read_only image2d_t in,
 	__global write_only image2d_t out,
 
-	__local float4* localMemory,
+	__local element_t* localMemory,
 	__constant ConstMemory_t* constMemory)
 {
 	OftenUsedVars_t vars;
 	initOftenUsedVars(&vars, constMemory);
 	
 
-	float4 f1 = loadElementForColumn(in, constMemory, &vars, 0);
-	float4 f2 = loadElementForColumn(in, constMemory, &vars, 1);
+	element_t f1 = cdf53loadElementForColumn(in, constMemory, &vars, 0);
+	element_t f2 = cdf53loadElementForColumn(in, constMemory, &vars, 1);
 	
 
 	int myID = get_local_id(1);
@@ -333,25 +407,26 @@ __kernel void columnsTransform(
 	float c;
 
 
-	c = ALPHA;
+	c = CDF53_ALPHA;
 	saveElement(localMemory, myID, maxID, 0, f1);
 	barrier(CLK_LOCAL_MEM_FENCE);
-	float4 f3 = loadElement(localMemory, myID, maxID, 1);
+	element_t f3 = loadElement(localMemory, myID, maxID, 1);
 	f2 += c * (f1 + f3);
 	
-	c = BETA;
+
+	c = CDF53_BETA;
 	saveElement(localMemory, myID, maxID, 1, f2);
 	barrier(CLK_LOCAL_MEM_FENCE);
-	float4 f0 = loadElement(localMemory, myID, maxID, 0);
+	element_t f0 = loadElement(localMemory, myID, maxID, 0);
 	f1 += c * (f0 + f2);
 	
 	
-	f1 *= INV_ZETA;
-	f2 *= ZETA;
+	f1 *= CDF53_INVZETA;
+	f2 *= CDF53_ZETA;
 	
 	
-	saveElementForColumn(out, constMemory, &vars, 0, f1);
-	saveElementForColumn(out, constMemory, &vars, 1, f2);
+	cdf53saveElementForColumn(out, constMemory, &vars, 0, f1);
+	cdf53saveElementForColumn(out, constMemory, &vars, 1, f2);
 }
 
 
@@ -360,14 +435,14 @@ __kernel void columnsTransform(
 
 
 
-float4 loadElementForColumnReconstruct(
+element_t cdf53loadElementForColumnReconstruct(
 	__global read_only image2d_t in,
 	__constant ConstMemory_t* constMemory,
 	OftenUsedVars_t* vars,
 	int offset)
 {
 	int nColumn = get_global_id(0);
-	int nLine = getLine(constMemory, vars, offset);
+	int nLine = cdf53getLine(constMemory, vars, offset);
 	int nAddr = nLine / 2 + offset*constMemory->halfTextureResolution.y;
 	int2 coord = {nColumn, nAddr};
 	
@@ -375,12 +450,12 @@ float4 loadElementForColumnReconstruct(
 }
 
 
-void saveElementForColumnReconstruct(
+void cdf53saveElementForColumnReconstruct(
 	__global write_only image2d_t out,
 	__constant ConstMemory_t* constMemory,
 	OftenUsedVars_t* vars,
 	int offset,
-	float4 f4)
+	element_t f4)
 {
 	int nLine = get_global_id(1)*2 + offset - 2 - get_group_id(1)*4;
 	int nColumn = get_global_id(0);
@@ -392,43 +467,644 @@ void saveElementForColumnReconstruct(
 
 
 
-__kernel void columnsReconstruct(
+__kernel void cdf53columnsReconstruct(
 	__global read_only image2d_t in,
 	__global write_only image2d_t out,
 
-	__local float4* localMemory,
+	__local element_t* localMemory,
 	__constant ConstMemory_t* constMemory)
 {
 	OftenUsedVars_t vars;
 	initOftenUsedVars(&vars, constMemory);
 	
 	
-	float4 f1 = loadElementForColumnReconstruct(in, constMemory, &vars, 0);
-	float4 f2 = loadElementForColumnReconstruct(in, constMemory, &vars, 1);
+	element_t f1 = cdf53loadElementForColumnReconstruct(in, constMemory, &vars, 0);
+	element_t f2 = cdf53loadElementForColumnReconstruct(in, constMemory, &vars, 1);
 	
 
-	f1 *= ZETA;
-	f2 *= INV_ZETA;
+	f1 *= CDF53_ZETA;
+	f2 *= CDF53_INVZETA;
 
 
 	int myID = get_local_id(1);
 	int maxID = get_local_size(1);
 	
 
-	float c = BETA;
+	float c = CDF53_BETA;
 	saveElement(localMemory, myID, maxID, 0, f2);
 	barrier(CLK_LOCAL_MEM_FENCE);
-	float4 f0 = loadElement(localMemory, myID, maxID, -1);
+	element_t f0 = loadElement(localMemory, myID, maxID, -1);
 	f1 -= c * (f0 + f2);
 	
 
-	c = ALPHA;
+	c = CDF53_ALPHA;
 	saveElement(localMemory, myID, maxID, -1, f1);
 	barrier(CLK_LOCAL_MEM_FENCE);
-	float4 f3 = loadElement(localMemory, myID, maxID, 0);
+	element_t f3 = loadElement(localMemory, myID, maxID, 0);
 	f2 -= c * (f1 + f3);
 	
 	
-	saveElementForColumnReconstruct(out, constMemory, &vars, 0, f1);
-	saveElementForColumnReconstruct(out, constMemory, &vars, 1, f2);
+	cdf53saveElementForColumnReconstruct(out, constMemory, &vars, 0, f1);
+	cdf53saveElementForColumnReconstruct(out, constMemory, &vars, 1, f2);
+}
+
+
+
+//====================================================================
+
+
+
+element_t cdf97loadElementForLine(
+	__global read_only image2d_t in,
+	__constant ConstMemory_t* constMemory,
+	OftenUsedVars_t* vars,
+	int offset)
+{
+	int nLine = get_global_id(1);
+	int nColumn = get_global_id(0)*2 + offset - 4;
+	int2 coord = {nColumn, nLine};
+	return readTexel(in, constMemory, vars, coord);	
+}
+
+
+
+void cdf97saveElementForLine(
+	__global write_only image2d_t out,
+	__constant ConstMemory_t* constMemory,
+	OftenUsedVars_t* vars,
+	int offset,
+	element_t e)
+{
+	int nLine = get_global_id(1);
+	int nOffset = get_global_id(0) - 2;
+	int nColumn = nOffset + offset * constMemory->halfTextureResolution.x;
+	int2 coord = {nColumn, nLine};
+
+	if (get_local_id(0) >= 2 && get_local_id(0)+2 < get_local_size(0))
+		writeTexel(out, vars, coord, e);	
+}
+
+
+
+__kernel void cdf97linesTransform(
+	__global read_only image2d_t in,
+	__global write_only image2d_t out,
+
+	__local element_t* localMemory,
+	__constant ConstMemory_t* constMemory)
+{
+	OftenUsedVars_t vars;
+	initOftenUsedVars(&vars, constMemory);
+	
+
+	element_t f1 = cdf97loadElementForLine(in, constMemory, &vars, 0);
+	element_t f2 = cdf97loadElementForLine(in, constMemory, &vars, 1);
+	
+
+	int myID = get_local_id(0);
+	int maxID = get_local_size(0);
+	float c;
+
+
+	c = CDF97_ALPHA;
+	saveElement(localMemory, myID,  maxID, 0, f1);
+	barrier(CLK_LOCAL_MEM_FENCE);
+	element_t f3 = loadElement(localMemory, myID, maxID, 1);
+	f2 += c * (f1 + f3);
+	
+
+	c = CDF97_BETA;
+	saveElement(localMemory, myID,  maxID, 1, f2);
+	barrier(CLK_LOCAL_MEM_FENCE);
+	element_t f0 = loadElement(localMemory, myID, maxID, 0);
+	f1 += c * (f0 + f2);
+	
+
+	c = CDF97_GAMMA;
+	saveElement(localMemory, myID,  maxID, 0, f1);
+	barrier(CLK_LOCAL_MEM_FENCE);
+	f3 = loadElement(localMemory, myID, maxID, 1);
+	f2 += c * (f1 + f3);
+	
+
+	c = CDF97_DELTA;
+	saveElement(localMemory, myID,  maxID, 1, f2);
+	barrier(CLK_LOCAL_MEM_FENCE);
+	f0 = loadElement(localMemory, myID, maxID, 0);
+	f1 += c * (f0 + f2);
+
+	
+	f1 *= CDF97_INVZETA;
+	f2 *= CDF97_ZETA;
+	
+	
+	cdf97saveElementForLine(out, constMemory, &vars, 0, f1);
+	cdf97saveElementForLine(out, constMemory, &vars, 1, f2);
+}
+
+
+
+//====================================================================
+
+
+int cdf97getColumn(__constant ConstMemory_t* constMemory,
+	OftenUsedVars_t* vars,
+	int offset)
+{
+	int mega = constMemory->megaTextureResolution.x;
+	int nColumn = get_global_id(0) - 2;
+	
+	nColumn = nColumn*2 + offset;
+	nColumn = abs(nColumn);
+	nColumn %= mega;
+	nColumn = nColumn >= vars->textureResolution.x ? mega - nColumn : nColumn;
+	return nColumn;
+}
+
+
+element_t cdf97loadElementForLineReconstruct(
+	__global read_only image2d_t in,
+	__constant ConstMemory_t* constMemory,
+	OftenUsedVars_t* vars,
+	int offset)
+{
+	int nLine = get_global_id(1);
+	int nColumn = cdf97getColumn(constMemory, vars, offset);
+	int nAddr = nColumn / 2 + offset*constMemory->halfTextureResolution.x;
+	int2 coord = {nAddr, nLine};
+
+	return readTexel(in, constMemory, vars, coord);	
+}
+
+
+void cdf97saveElementForLineReconstruct(
+	__global write_only image2d_t out,
+	__constant ConstMemory_t* constMemory,
+	OftenUsedVars_t* vars,
+	int offset,
+	element_t e)
+{
+	int nLine = get_global_id(1);
+	int nColumn = get_global_id(0)*2 + offset - 4;
+		
+	int2 coord = {nColumn, nLine};
+	if (get_local_id(0) >= 2 && get_local_id(0)+2 < get_local_size(0))
+		writeTexel(out, vars, coord, e);	
+}
+
+
+__kernel void cdf97linesReconstruct(
+	__global read_only image2d_t in,
+	__global write_only image2d_t out,
+
+	__local element_t* localMemory,
+	__constant ConstMemory_t* constMemory)
+{
+	OftenUsedVars_t vars;
+	initOftenUsedVars(&vars, constMemory);
+	
+	
+	element_t f1 = cdf97loadElementForLineReconstruct(in, constMemory, &vars, 0);
+	element_t f2 = cdf97loadElementForLineReconstruct(in, constMemory, &vars, 1);
+	
+	
+	f1 *= CDF97_ZETA;
+	f2 *= CDF97_INVZETA;
+
+	
+	int myID = get_local_id(0);
+	int maxID = get_local_size(0);
+	
+	float c;
+	c = CDF97_DELTA;
+	saveElement(localMemory, myID,  maxID, 0, f2);
+	barrier(CLK_LOCAL_MEM_FENCE);
+	element_t f0 = loadElement(localMemory, myID, maxID, -1);
+	f1 -= c * (f0 + f2);
+	
+
+	c = CDF97_GAMMA;
+	saveElement(localMemory, myID,  maxID, -1, f1);
+	barrier(CLK_LOCAL_MEM_FENCE);
+	element_t f3 = loadElement(localMemory, myID, maxID, 0);
+	f2 -= c * (f1 + f3);
+
+
+	c = CDF97_BETA;
+	saveElement(localMemory, myID,  maxID, 0, f2);
+	barrier(CLK_LOCAL_MEM_FENCE);
+	f0 = loadElement(localMemory, myID, maxID, -1);
+	f1 -= c * (f0 + f2);
+	
+
+	c = CDF97_ALPHA;
+	saveElement(localMemory, myID,  maxID, -1, f1);
+	barrier(CLK_LOCAL_MEM_FENCE);
+	f3 = loadElement(localMemory, myID, maxID, 0);
+	f2 -= c * (f1 + f3);
+	
+
+	cdf97saveElementForLineReconstruct(out, constMemory, &vars, 0, f1);
+	cdf97saveElementForLineReconstruct(out, constMemory, &vars, 1, f2);
+}
+
+
+
+//====================================================================
+
+
+
+
+element_t cdf97loadElementForColumn(
+	__global read_only image2d_t in,
+	__constant ConstMemory_t* constMemory,
+	OftenUsedVars_t* vars,
+	int offset)
+{
+	int nLine = get_global_id(1)*2 + offset - 4;
+	int nColumn = get_global_id(0);
+	int2 coord = {nColumn, nLine};
+	return readTexel(in, constMemory, vars, coord);	
+}
+
+
+
+void cdf97saveElementForColumn(
+	__global write_only image2d_t out,
+	__constant ConstMemory_t* constMemory,
+	OftenUsedVars_t* vars,
+	int offset,
+	element_t e)
+{
+	int nColumn = get_global_id(0);
+	int nOffset = get_global_id(1) - 2;
+	int nLine = nOffset + offset * constMemory->halfTextureResolution.y;
+		
+	int2 coord = {nColumn, nLine};
+	if (get_local_id(1) >= 2 && get_local_id(1)+2 < get_local_size(1) && nOffset < constMemory->halfTextureResolution.y)
+		writeTexel(out, vars, coord, e);	
+}
+
+
+__kernel void cdf97columnsTransform(
+	__global read_only image2d_t in,
+	__global write_only image2d_t out,
+
+	__local element_t* localMemory,
+	__constant ConstMemory_t* constMemory)
+{
+	OftenUsedVars_t vars;
+	initOftenUsedVars(&vars, constMemory);
+	
+
+	element_t f1 = cdf97loadElementForColumn(in, constMemory, &vars, 0);
+	element_t f2 = cdf97loadElementForColumn(in, constMemory, &vars, 1);
+	
+
+	int myID = get_local_id(1);
+	int maxID = get_local_size(1);
+	float c;
+
+
+	c = CDF97_ALPHA;
+	saveElement(localMemory, myID, maxID, 0, f1);
+	barrier(CLK_LOCAL_MEM_FENCE);
+	element_t f3 = loadElement(localMemory, myID, maxID, 1);
+	f2 += c * (f1 + f3);
+	
+
+	c = CDF97_BETA;
+	saveElement(localMemory, myID, maxID, 1, f2);
+	barrier(CLK_LOCAL_MEM_FENCE);
+	element_t f0 = loadElement(localMemory, myID, maxID, 0);
+	f1 += c * (f0 + f2);
+	
+	c = CDF97_GAMMA;
+	saveElement(localMemory, myID, maxID, 0, f1);
+	barrier(CLK_LOCAL_MEM_FENCE);
+	f3 = loadElement(localMemory, myID, maxID, 1);
+	f2 += c * (f1 + f3);
+	
+
+	c = CDF97_DELTA;
+	saveElement(localMemory, myID, maxID, 1, f2);
+	barrier(CLK_LOCAL_MEM_FENCE);
+	f0 = loadElement(localMemory, myID, maxID, 0);
+	f1 += c * (f0 + f2);
+
+
+	f1 *= CDF97_INVZETA;
+	f2 *= CDF97_ZETA;
+	
+	
+	cdf97saveElementForColumn(out, constMemory, &vars, 0, f1);
+	cdf97saveElementForColumn(out, constMemory, &vars, 1, f2);
+}
+
+
+
+//=======================================================================
+
+
+int cdf97getLine(__constant ConstMemory_t* constMemory,
+	OftenUsedVars_t* vars,
+	int offset)
+{
+	int mega = constMemory->megaTextureResolution.y;
+	int nLine = get_global_id(1) - 2;
+	
+	nLine = nLine*2 + offset;
+	nLine = abs(nLine);
+	nLine %= mega;
+	nLine = nLine >= vars->textureResolution.y ? mega - nLine : nLine;
+	return nLine;
+}
+
+
+element_t cdf97loadElementForColumnReconstruct(
+	__global read_only image2d_t in,
+	__constant ConstMemory_t* constMemory,
+	OftenUsedVars_t* vars,
+	int offset)
+{
+	int nColumn = get_global_id(0);
+	int nLine = cdf97getLine(constMemory, vars, offset);
+	int nAddr = nLine / 2 + offset*constMemory->halfTextureResolution.y;
+	int2 coord = {nColumn, nAddr};
+	
+	return readTexel(in, constMemory, vars, coord);	
+}
+
+
+void cdf97saveElementForColumnReconstruct(
+	__global write_only image2d_t out,
+	__constant ConstMemory_t* constMemory,
+	OftenUsedVars_t* vars,
+	int offset,
+	element_t f4)
+{
+	int nLine = get_global_id(1)*2 + offset - 4;
+	int nColumn = get_global_id(0);
+		
+	int2 coord = {nColumn, nLine};
+	if (get_local_id(1) >= 2 && get_local_id(1)+2 < get_local_size(1))
+		writeTexel(out, vars, coord, f4);	
+}
+
+
+
+__kernel void cdf97columnsReconstruct(
+	__global read_only image2d_t in,
+	__global write_only image2d_t out,
+
+	__local element_t* localMemory,
+	__constant ConstMemory_t* constMemory)
+{
+	OftenUsedVars_t vars;
+	initOftenUsedVars(&vars, constMemory);
+	
+	
+	element_t f1 = cdf97loadElementForColumnReconstruct(in, constMemory, &vars, 0);
+	element_t f2 = cdf97loadElementForColumnReconstruct(in, constMemory, &vars, 1);
+	
+
+	f1 *= CDF97_ZETA;
+	f2 *= CDF97_INVZETA;
+
+
+	int myID = get_local_id(1);
+	int maxID = get_local_size(1);
+	
+
+	float c = CDF97_DELTA;
+	saveElement(localMemory, myID, maxID, 0, f2);
+	barrier(CLK_LOCAL_MEM_FENCE);
+	element_t f0 = loadElement(localMemory, myID, maxID, -1);
+	f1 -= c * (f0 + f2);
+	
+
+	c = CDF97_GAMMA;
+	saveElement(localMemory, myID, maxID, -1, f1);
+	barrier(CLK_LOCAL_MEM_FENCE);
+	element_t f3 = loadElement(localMemory, myID, maxID, 0);
+	f2 -= c * (f1 + f3);
+
+
+	c = CDF97_BETA;
+	saveElement(localMemory, myID, maxID, 0, f2);
+	barrier(CLK_LOCAL_MEM_FENCE);
+	f0 = loadElement(localMemory, myID, maxID, -1);
+	f1 -= c * (f0 + f2);
+	
+
+	c = CDF97_ALPHA;
+	saveElement(localMemory, myID, maxID, -1, f1);
+	barrier(CLK_LOCAL_MEM_FENCE);
+	f3 = loadElement(localMemory, myID, maxID, 0);
+	f2 -= c * (f1 + f3);
+	
+	
+	cdf97saveElementForColumnReconstruct(out, constMemory, &vars, 0, f1);
+	cdf97saveElementForColumnReconstruct(out, constMemory, &vars, 1, f2);
+}
+
+
+
+//====================================================================
+
+
+
+
+
+__kernel void wcdf53linesTransform(
+	__global read_only image2d_t in,
+	__global write_only image2d_t out,
+	__global write_only image2d_t weight,
+
+	__local element_t* localMemory,	
+	__local element_t* localMemory2,
+	__constant ConstMemory_t* constMemory)
+{
+	OftenUsedVars_t vars;
+	initOftenUsedVars(&vars, constMemory);
+
+	int myID = get_local_id(0);
+	int maxID = get_local_size(0);	
+
+	element_t f1 = cdf53loadElementForLine(in, constMemory, &vars, 0);
+	element_t f2 = cdf53loadElementForLine(in, constMemory, &vars, 1);
+
+
+	saveElement(localMemory, myID,  maxID, 0, f1);
+	barrier(CLK_LOCAL_MEM_FENCE);
+	element_t f3 = loadElement(localMemory, myID, maxID, 1);
+	
+
+
+	float w1 = 1.0f / (pow(absf(f1 - f2), WCDF53_ALPHA) + WCDF53_EPSILON);
+	float w2 = 1.0f / (pow(absf(f2 - f3), WCDF53_ALPHA) + WCDF53_EPSILON);
+
+	float d = f2 - (f1*w1 + f2*w2) / (w1+w2);
+
+
+	saveElement(localMemory, myID, maxID, 1, w2);
+	saveElement(localMemory2,myID, maxID, 1, d);
+	barrier(CLK_LOCAL_MEM_FENCE);
+	element_t w0 = loadElement(localMemory, myID, maxID, 0);
+	element_t d0 = loadElement(localMemory2, myID, maxID, 0);
+
+	float a = f1 + (w0*d0 + w1*d)/(2*(w0+w1));
+
+	
+	cdf53saveElementForLine(out, constMemory, &vars, 0, a);
+	cdf53saveElementForLine(out, constMemory, &vars, 1, d);
+	cdf53saveWeightForLine(weight, constMemory, &vars, 0, w1);
+	cdf53saveWeightForLine(weight, constMemory, &vars, 1, w2);
+}
+
+
+
+//====================================================================
+
+
+__kernel void wcdf53linesReconstruct(
+	__global read_only image2d_t in,
+	__global write_only image2d_t out,
+
+	__local element_t* localMemory,
+	__constant ConstMemory_t* constMemory)
+{
+	OftenUsedVars_t vars;
+	initOftenUsedVars(&vars, constMemory);
+	
+	
+	element_t f1 = cdf53loadElementForLineReconstruct(in, constMemory, &vars, 0);
+	element_t f2 = cdf53loadElementForLineReconstruct(in, constMemory, &vars, 1);
+	
+	
+	f1 *= CDF53_ZETA;
+	f2 *= CDF53_INVZETA;
+
+	
+	int myID = get_local_id(0);
+	int maxID = get_local_size(0);
+	
+	float c;
+	
+
+	c = CDF53_BETA;
+	saveElement(localMemory, myID,  maxID, 0, f2);
+	barrier(CLK_LOCAL_MEM_FENCE);
+	element_t f0 = loadElement(localMemory, myID, maxID, -1);
+	f1 -= c * (f0 + f2);
+	
+
+	c = CDF53_ALPHA;
+	saveElement(localMemory, myID,  maxID, -1, f1);
+	barrier(CLK_LOCAL_MEM_FENCE);
+	element_t f3 = loadElement(localMemory, myID, maxID, 0);
+	f2 -= c * (f1 + f3);
+	
+
+	cdf53saveElementForLineReconstruct(out, constMemory, &vars, 0, f1);
+	cdf53saveElementForLineReconstruct(out, constMemory, &vars, 1, f2);
+}
+
+
+
+//====================================================================
+
+
+
+
+__kernel void wcdf53columnsTransform(
+	__global read_only image2d_t in,
+	__global write_only image2d_t out,
+	__global write_only image2d_t weight,
+
+	__local element_t* localMemory,	
+	__local element_t* localMemory2,
+	__constant ConstMemory_t* constMemory)
+{
+	OftenUsedVars_t vars;
+	initOftenUsedVars(&vars, constMemory);
+	
+	int myID = get_local_id(1);
+	int maxID = get_local_size(1);
+
+	element_t f1 = cdf53loadElementForColumn(in, constMemory, &vars, 0);
+	element_t f2 = cdf53loadElementForColumn(in, constMemory, &vars, 1);
+	
+
+	saveElement(localMemory, myID,  maxID, 0, f1);
+	barrier(CLK_LOCAL_MEM_FENCE);
+	element_t f3 = loadElement(localMemory, myID, maxID, 1);
+	
+
+	float w1 = 1.0f / (pow(absf(f1 - f2), WCDF53_ALPHA) + WCDF53_EPSILON);
+	float w2 = 1.0f / (pow(absf(f2 - f3), WCDF53_ALPHA) + WCDF53_EPSILON);
+
+	float d = f2 - (f1*w1 + f2*w2) / (w1+w2);
+
+
+	saveElement(localMemory, myID, maxID, 1, w2);
+	saveElement(localMemory2,myID, maxID, 1, d);
+	barrier(CLK_LOCAL_MEM_FENCE);
+	element_t w0 = loadElement(localMemory, myID, maxID, 0);
+	element_t d0 = loadElement(localMemory2, myID, maxID, 0);
+
+	float a = f1 + (w0*d0 + w1*d)/(2*(w0+w1));
+
+	
+	cdf53saveElementForColumn(out, constMemory, &vars, 0, a);
+	cdf53saveElementForColumn(out, constMemory, &vars, 1, d);
+	cdf53saveWeightForColumn(weight, constMemory, &vars, 0, w1);
+	cdf53saveWeightForColumn(weight, constMemory, &vars, 1, w2);
+}
+
+
+
+//=======================================================================
+
+
+
+__kernel void wcdf53columnsReconstruct(
+	__global read_only image2d_t in,
+	__global write_only image2d_t out,
+
+	__local element_t* localMemory,
+	__constant ConstMemory_t* constMemory)
+{
+	OftenUsedVars_t vars;
+	initOftenUsedVars(&vars, constMemory);
+	
+	
+	element_t f1 = cdf53loadElementForColumnReconstruct(in, constMemory, &vars, 0);
+	element_t f2 = cdf53loadElementForColumnReconstruct(in, constMemory, &vars, 1);
+	
+
+	f1 *= CDF53_ZETA;
+	f2 *= CDF53_INVZETA;
+
+
+	int myID = get_local_id(1);
+	int maxID = get_local_size(1);
+	
+
+	float c = CDF53_BETA;
+	saveElement(localMemory, myID, maxID, 0, f2);
+	barrier(CLK_LOCAL_MEM_FENCE);
+	element_t f0 = loadElement(localMemory, myID, maxID, -1);
+	f1 -= c * (f0 + f2);
+	
+
+	c = CDF53_ALPHA;
+	saveElement(localMemory, myID, maxID, -1, f1);
+	barrier(CLK_LOCAL_MEM_FENCE);
+	element_t f3 = loadElement(localMemory, myID, maxID, 0);
+	f2 -= c * (f1 + f3);
+	
+	
+	cdf53saveElementForColumnReconstruct(out, constMemory, &vars, 0, f1);
+	cdf53saveElementForColumnReconstruct(out, constMemory, &vars, 1, f2);
 }
