@@ -11,9 +11,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{3427F9E3-AB17-4883-8E41-B3FD31E6613F}</ProjectGuid>
+    <ProjectGuid>{2C81B587-52E1-47CB-9D81-FEEC8E159163}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>TestWavelets</RootNamespace>
+    <RootNamespace>TestPerformance</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -49,7 +49,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir)LibGPP;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -65,17 +65,17 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="TestWavelets.cpp" />
+    <ClCompile Include="TestPerformance.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LibCLFFT\LibCLFFT.vcxproj">
@@ -89,10 +89,17 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\Data\kernels\toneMapping.cl" />
-    <None Include="..\Data\kernels\wavelets.cl" />
-    <None Include="..\Data\kernels\waveletsCool.cl" />
-    <None Include="..\Data\kernels\waveletsNaive.cl" />
+    <None Include="..\Data\kernels\wperfCDF97FourPixelsBorders.cl" />
+    <None Include="..\Data\kernels\wperfCDF97SquareBorders.cl" />
+    <None Include="..\Data\kernels\wperfCDF97TwoPixelsBorders.cl" />
+    <None Include="..\Data\kernels\wperfCDF97TwoPixelsBorders2.cl" />
+    <None Include="..\Data\kernels\wperfCDF97User.cl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="..\Data\kernels\wperfCopyImage.cl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="UserTransformation.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

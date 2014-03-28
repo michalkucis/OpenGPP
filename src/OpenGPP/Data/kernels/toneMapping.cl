@@ -1,6 +1,6 @@
 sampler_t c_sampler = CLK_ADDRESS_REPEAT;
 #define MIN_INPUT_VALUE 0.000001f
-#define BETA 0.6f
+#define BETA 0.7f
 #define MIDDLE_GREY 0.1999f
 
 float absf (float x)

@@ -98,7 +98,7 @@ cl::CommandQueue getCLCommandQueue (cl::Context context)
 	try {
 		cl_int err = CL_SUCCESS;
 		std::vector<cl::Device> devices = context.getInfo<CL_CONTEXT_DEVICES>();
-		cl::CommandQueue queue(context, devices[0], 0, &err);			
+		cl::CommandQueue queue(context, devices[0], CL_QUEUE_PROFILING_ENABLE, &err);			
 		if (err != CL_SUCCESS)
 			throw cl::Error(err, "cl::CommandQueue");
 		return queue;
@@ -173,7 +173,7 @@ cl::Kernel createKernel (cl::Context context, string filename, string kernelName
 		cl::Program program = cl::Program(context, source);
 		std::vector<cl::Device> devices = context.getInfo<CL_CONTEXT_DEVICES>();
 
-		string buildOptions = "-cl-mad-enable -Werror";
+		string buildOptions = "-cl-mad-enable -Werror -cl-fast-relaxed-math";
 		cl_int err = clBuildProgram(program(), devices.size(), (cl_device_id*)&devices.front(),
 			buildOptions.c_str(), NULL, NULL);
 		if (err == CL_BUILD_PROGRAM_FAILURE)
@@ -186,6 +186,7 @@ cl::Kernel createKernel (cl::Context context, string filename, string kernelName
 			szLog[logSize] = '\0';
 			string log = szLog;
 			delete[] (szLog);
+			perror(log.c_str());
 			error2(ERR_OPENCL, "OpenCL program '%s' cannot be compiled. Desc.: %s", filename.c_str(),log.c_str());
 		}
 		else if(err != CL_SUCCESS)

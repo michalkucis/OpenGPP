@@ -181,6 +181,11 @@ public:
 
 
 
+
+
+
+
+
 class EffectCDF53: public EffectBaseWavelet
 {
 	cl::Kernel m_kernelLinesTransform;
@@ -202,10 +207,10 @@ public:
 	EffectCDF53(Ptr<GLTexturesRGBFactory> factoryRGB, Ptr<GLTexturesRedFactory> factoryRed, Ptr<EffectCLObjectsFactory> factory): 
 	EffectBaseWavelet(factoryRGB, factoryRed, factory)
 	{
-		m_kernelLinesTransform = createKernel(*m_context, "kernels\\waveletsCool.cl", "cdf53linesTransform");
-		m_kernelColumnsTransform = createKernel(*m_context, "kernels\\waveletsCool.cl", "cdf53columnsTransform");
-		m_kernelLinesReconstruct = createKernel(*m_context, "kernels\\waveletsCool.cl", "cdf53linesReconstruct");
-		m_kernelColumnsReconstruct = createKernel(*m_context, "kernels\\waveletsCool.cl", "cdf53columnsReconstruct");
+		m_kernelLinesTransform = createKernel(*m_context, "kernels\\waveletsNaive.cl", "cdf53linesTransform");
+		m_kernelColumnsTransform = createKernel(*m_context, "kernels\\waveletsNaive.cl", "cdf53columnsTransform");
+		m_kernelLinesReconstruct = createKernel(*m_context, "kernels\\waveletsNaive.cl", "cdf53linesReconstruct");
+		m_kernelColumnsReconstruct = createKernel(*m_context, "kernels\\waveletsNaive.cl", "cdf53columnsReconstruct");
 
 		m_constMemory = cl::Buffer(*m_context, CL_MEM_READ_ONLY, sizeof(m_hostConstMem), &m_hostConstMem);
 	}
@@ -213,10 +218,10 @@ public:
 	EffectCDF53(Ptr<SharedObjectsFactory> sof, Ptr<EffectCLObjectsFactory> factory): 
 	EffectBaseWavelet(sof->getFactoryRGBTexture(), sof->getFactoryRedTexture(), factory)
 	{
-		m_kernelLinesTransform = createKernel(*m_context, "kernels\\waveletsCool.cl", "cdf53linesTransform");
-		m_kernelColumnsTransform = createKernel(*m_context, "kernels\\waveletsCool.cl", "cdf53columnsTransform");
-		m_kernelLinesReconstruct = createKernel(*m_context, "kernels\\waveletsCool.cl", "cdf53linesReconstruct");
-		m_kernelColumnsReconstruct = createKernel(*m_context, "kernels\\waveletsCool.cl", "cdf53columnsReconstruct");
+		m_kernelLinesTransform = createKernel(*m_context, "kernels\\waveletsNaive.cl", "cdf53linesTransform");
+		m_kernelColumnsTransform = createKernel(*m_context, "kernels\\waveletsNaive.cl", "cdf53columnsTransform");
+		m_kernelLinesReconstruct = createKernel(*m_context, "kernels\\waveletsNaive.cl", "cdf53linesReconstruct");
+		m_kernelColumnsReconstruct = createKernel(*m_context, "kernels\\waveletsNaive.cl", "cdf53columnsReconstruct");
 
 		m_constMemory = cl::Buffer(*m_context, CL_MEM_READ_ONLY, sizeof(m_hostConstMem), &m_hostConstMem);
 	}
@@ -363,10 +368,10 @@ public:
 	EffectCDF97(Ptr<GLTexturesRGBFactory> factoryRGB, Ptr<GLTexturesRedFactory> factoryRed, Ptr<EffectCLObjectsFactory> factory): 
 	EffectBaseWavelet(factoryRGB, factoryRed, factory)
 	{
-		m_kernelLinesTransform = createKernel(*m_context, "kernels\\waveletsCool.cl", "cdf97linesTransform");
-		m_kernelColumnsTransform = createKernel(*m_context, "kernels\\waveletsCool.cl", "cdf97columnsTransform");
-		m_kernelLinesReconstruct = createKernel(*m_context, "kernels\\waveletsCool.cl", "cdf97linesReconstruct");
-		m_kernelColumnsReconstruct = createKernel(*m_context, "kernels\\waveletsCool.cl", "cdf97columnsReconstruct");
+		m_kernelLinesTransform = createKernel(*m_context, "kernels\\waveletsNaive.cl", "cdf97linesTransform");
+		m_kernelColumnsTransform = createKernel(*m_context, "kernels\\waveletsNaive.cl", "cdf97columnsTransform");
+		m_kernelLinesReconstruct = createKernel(*m_context, "kernels\\waveletsNaive.cl", "cdf97linesReconstruct");
+		m_kernelColumnsReconstruct = createKernel(*m_context, "kernels\\waveletsNaive.cl", "cdf97columnsReconstruct");
 
 		m_constMemory = cl::Buffer(*m_context, CL_MEM_READ_ONLY, sizeof(m_hostConstMem), &m_hostConstMem);
 	}
@@ -374,10 +379,10 @@ public:
 	EffectCDF97(Ptr<SharedObjectsFactory> sof, Ptr<EffectCLObjectsFactory> factory): 
 	EffectBaseWavelet(sof->getFactoryRGBTexture(), sof->getFactoryRedTexture(), factory)
 	{
-		m_kernelLinesTransform = createKernel(*m_context, "kernels\\waveletsCool.cl", "cdf97linesTransform");
-		m_kernelColumnsTransform = createKernel(*m_context, "kernels\\waveletsCool.cl", "cdf97columnsTransform");
-		m_kernelLinesReconstruct = createKernel(*m_context, "kernels\\waveletsCool.cl", "cdf97linesReconstruct");
-		m_kernelColumnsReconstruct = createKernel(*m_context, "kernels\\waveletsCool.cl", "cdf97columnsReconstruct");
+		m_kernelLinesTransform = createKernel(*m_context, "kernels\\waveletsNaive.cl", "cdf97linesTransform");
+		m_kernelColumnsTransform = createKernel(*m_context, "kernels\\waveletsNaive.cl", "cdf97columnsTransform");
+		m_kernelLinesReconstruct = createKernel(*m_context, "kernels\\waveletsNaive.cl", "cdf97linesReconstruct");
+		m_kernelColumnsReconstruct = createKernel(*m_context, "kernels\\waveletsNaive.cl", "cdf97columnsReconstruct");
 
 		m_constMemory = cl::Buffer(*m_context, CL_MEM_READ_ONLY, sizeof(m_hostConstMem), &m_hostConstMem);
 	}
@@ -597,10 +602,10 @@ public:
 	EffectWCDF53(Ptr<GLTexturesRGBFactory> factoryRGB, Ptr<GLTexturesRedFactory> factoryRed, Ptr<EffectCLObjectsFactory> factory): 
 	EffectBaseWavelet(factoryRGB, factoryRed, factory)
 	{
-		m_kernelLinesTransform = createKernel(*m_context, "kernels\\waveletsCool.cl", "wcdf53linesTransform");
-		m_kernelColumnsTransform = createKernel(*m_context, "kernels\\waveletsCool.cl", "wcdf53columnsTransform");
-		m_kernelLinesReconstruct = createKernel(*m_context, "kernels\\waveletsCool.cl", "wcdf53linesReconstruct");
-		m_kernelColumnsReconstruct = createKernel(*m_context, "kernels\\waveletsCool.cl", "wcdf53columnsReconstruct");
+		m_kernelLinesTransform = createKernel(*m_context, "kernels\\waveletsNaive.cl", "wcdf53linesTransform");
+		m_kernelColumnsTransform = createKernel(*m_context, "kernels\\waveletsNaive.cl", "wcdf53columnsTransform");
+		m_kernelLinesReconstruct = createKernel(*m_context, "kernels\\waveletsNaive.cl", "wcdf53linesReconstruct");
+		m_kernelColumnsReconstruct = createKernel(*m_context, "kernels\\waveletsNaive.cl", "wcdf53columnsReconstruct");
 
 		m_constMemory = cl::Buffer(*m_context, CL_MEM_READ_ONLY, sizeof(m_hostConstMem), &m_hostConstMem);
 	}
@@ -608,10 +613,10 @@ public:
 	EffectWCDF53(Ptr<SharedObjectsFactory> sof, Ptr<EffectCLObjectsFactory> factory): 
 	EffectBaseWavelet(sof->getFactoryRGBTexture(), sof->getFactoryRedTexture(), factory)
 	{
-		m_kernelLinesTransform = createKernel(*m_context, "kernels\\waveletsCool.cl", "wcdf53linesTransform");
-		m_kernelColumnsTransform = createKernel(*m_context, "kernels\\waveletsCool.cl", "wcdf53columnsTransform");
-		m_kernelLinesReconstruct = createKernel(*m_context, "kernels\\waveletsCool.cl", "wcdf53linesReconstruct");
-		m_kernelColumnsReconstruct = createKernel(*m_context, "kernels\\waveletsCool.cl", "wcdf53columnsReconstruct");
+		m_kernelLinesTransform = createKernel(*m_context, "kernels\\waveletsNaive.cl", "wcdf53linesTransform");
+		m_kernelColumnsTransform = createKernel(*m_context, "kernels\\waveletsNaive.cl", "wcdf53columnsTransform");
+		m_kernelLinesReconstruct = createKernel(*m_context, "kernels\\waveletsNaive.cl", "wcdf53linesReconstruct");
+		m_kernelColumnsReconstruct = createKernel(*m_context, "kernels\\waveletsNaive.cl", "wcdf53columnsReconstruct");
 
 		m_constMemory = cl::Buffer(*m_context, CL_MEM_READ_ONLY, sizeof(m_hostConstMem), &m_hostConstMem);
 	}
@@ -843,10 +848,10 @@ public:
 	EffectWCDF97(Ptr<GLTexturesRGBFactory> factoryRGB, Ptr<GLTexturesRedFactory> factoryRed, Ptr<EffectCLObjectsFactory> factory): 
 	EffectBaseWavelet(factoryRGB, factoryRed, factory)
 	{
-		m_kernelLinesTransform = createKernel(*m_context, "kernels\\waveletsCool.cl", "wcdf97linesTransform");
-		m_kernelColumnsTransform = createKernel(*m_context, "kernels\\waveletsCool.cl", "wcdf97columnsTransform");
-		m_kernelLinesReconstruct = createKernel(*m_context, "kernels\\waveletsCool.cl", "wcdf97linesReconstruct");
-		m_kernelColumnsReconstruct = createKernel(*m_context, "kernels\\waveletsCool.cl", "wcdf97columnsReconstruct");
+		m_kernelLinesTransform = createKernel(*m_context, "kernels\\waveletsNaive.cl", "wcdf97linesTransform");
+		m_kernelColumnsTransform = createKernel(*m_context, "kernels\\waveletsNaive.cl", "wcdf97columnsTransform");
+		m_kernelLinesReconstruct = createKernel(*m_context, "kernels\\waveletsNaive.cl", "wcdf97linesReconstruct");
+		m_kernelColumnsReconstruct = createKernel(*m_context, "kernels\\waveletsNaive.cl", "wcdf97columnsReconstruct");
 
 		m_constMemory = cl::Buffer(*m_context, CL_MEM_READ_ONLY, sizeof(m_hostConstMem), &m_hostConstMem);
 	}
@@ -854,10 +859,10 @@ public:
 	EffectWCDF97(Ptr<SharedObjectsFactory> sof, Ptr<EffectCLObjectsFactory> factory): 
 	EffectBaseWavelet(sof->getFactoryRGBTexture(), sof->getFactoryRedTexture(), factory)
 	{
-		m_kernelLinesTransform = createKernel(*m_context, "kernels\\waveletsCool.cl", "wcdf97linesTransform");
-		m_kernelColumnsTransform = createKernel(*m_context, "kernels\\waveletsCool.cl", "wcdf97columnsTransform");
-		m_kernelLinesReconstruct = createKernel(*m_context, "kernels\\waveletsCool.cl", "wcdf97linesReconstruct");
-		m_kernelColumnsReconstruct = createKernel(*m_context, "kernels\\waveletsCool.cl", "wcdf97columnsReconstruct");
+		m_kernelLinesTransform = createKernel(*m_context, "kernels\\waveletsNaive.cl", "wcdf97linesTransform");
+		m_kernelColumnsTransform = createKernel(*m_context, "kernels\\waveletsNaive.cl", "wcdf97columnsTransform");
+		m_kernelLinesReconstruct = createKernel(*m_context, "kernels\\waveletsNaive.cl", "wcdf97linesReconstruct");
+		m_kernelColumnsReconstruct = createKernel(*m_context, "kernels\\waveletsNaive.cl", "wcdf97columnsReconstruct");
 
 		m_constMemory = cl::Buffer(*m_context, CL_MEM_READ_ONLY, sizeof(m_hostConstMem), &m_hostConstMem);
 	}
@@ -1099,6 +1104,99 @@ public:
 };
 
 
+
+class EffectWavelet: public EffectBaseWavelet
+{
+	cl::Kernel m_kernelTransformOneLevel;
+	cl::Buffer m_constMemory;
+	ConstMemory_t m_hostConstMem;
+public:
+	void initKernelConstMemory(int2 imageRes)
+	{
+		m_hostConstMem.textureResolution = imageRes;
+		m_hostConstMem.megaTextureResolution = imageRes*2-2;
+		m_hostConstMem.halfTextureResolution = imageRes/2+imageRes%2;
+
+		m_queue->enqueueWriteBuffer(m_constMemory, false, 0, sizeof(m_hostConstMem), &m_hostConstMem);
+	}
+	EffectWavelet(Ptr<GLTexturesRGBFactory> factoryRGB, Ptr<GLTexturesRedFactory> factoryRed, Ptr<EffectCLObjectsFactory> factory): 
+	EffectBaseWavelet(factoryRGB, factoryRed, factory)
+	{
+		m_kernelTransformOneLevel = createKernel(*m_context, "kernels\\waveletsCool.cl", "tranformOneLevel");
+		m_constMemory = cl::Buffer(*m_context, CL_MEM_READ_ONLY, sizeof(m_hostConstMem), &m_hostConstMem);
+	}
+
+	EffectWavelet(Ptr<SharedObjectsFactory> sof, Ptr<EffectCLObjectsFactory> factory): 
+	EffectBaseWavelet(sof->getFactoryRGBTexture(), sof->getFactoryRedTexture(), factory)
+	{
+		m_kernelTransformOneLevel = createKernel(*m_context, "kernels\\waveletsCool.cl", "tranformOneLevel");
+		m_constMemory = cl::Buffer(*m_context, CL_MEM_READ_ONLY, sizeof(m_hostConstMem), &m_hostConstMem);
+	}
+	int2 getCountGlobalItems (int2 resolution, int2 numWorkItemsPerGroup)
+	{
+		int2 numEffectiveItems = numWorkItemsPerGroup - 4;
+		int2 globalItems = resolution/2 + resolution%2;
+		globalItems.x = globalItems.x/numEffectiveItems.x + (globalItems.x%numEffectiveItems.x?1:0);
+		globalItems.y = globalItems.y/numEffectiveItems.y + (globalItems.y%numEffectiveItems.y?1:0);
+		return globalItems * numWorkItemsPerGroup;
+	}
+public:
+	void performTransformation(ImageSwapper& imSwapper, int2 res)
+	{		
+		int countLvls = getUsefulCountLvls(res);
+		for (int i = 0; i < countLvls; i++)
+		{
+			int2 resLvl = getLvlResolution(res, i);
+
+			int2 imageSize = res;
+			int2 numWorkItemsPerGroup(32, 32);
+			int2 numGlobalItems(getCountGlobalItems(res, numWorkItemsPerGroup));
+
+			imSwapper.setImages(m_kernelTransformOneLevel);
+			m_kernelTransformOneLevel.setArg(2, 16 /*sizeof(float2)*numWorkItemsPerGroup.getArea()*/);
+			initKernelConstMemory(resLvl);
+			m_kernelTransformOneLevel.setArg(3, m_constMemory);
+
+			m_queue->enqueueNDRangeKernel(m_kernelTransformOneLevel, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItemsPerGroup.x, numWorkItemsPerGroup.y));
+		}
+	}
+	void performReconstruction(ImageSwapper& imSwapper, int2 res)
+	{
+	}
+	void performOperations(cl::Image2DGL& imageColor, cl::Image2DGL& imageResult, cl::Image2DGL imageTmp[2])
+	{	
+		ImageSwapper imSwapper (imageColor, imageTmp);
+		int2 res (imageResult.getImageInfo<CL_IMAGE_WIDTH>(), imageResult.getImageInfo<CL_IMAGE_HEIGHT>());
+
+		// transform:
+		performTransformation(imSwapper, res);
+
+		// reconstruct:
+		performReconstruction(imSwapper, res);
+
+		cl::Image2DGL src, dst;
+		imSwapper.getImages(src, dst);
+
+		dst = imageResult;
+		cl::size_t<3> zero;
+		zero[0] = 0;
+		zero[1] = 0;
+		zero[2] = 0;
+		cl::size_t<3> region;
+		region[0] = res.x;
+		region[1] = res.y;
+		region[2] = 1;
+		m_queue->enqueueCopyImage(src, dst, zero, zero, region);
+	}
+
+	Ptr<GLTexture2D> createTexTarget()
+	{
+		return m_factoryTexRed->createProduct();
+	}
+};
+
+
+
 class Visitor2ReadRGBToSaveMatlabASCII: public Visitor2ReadOnly<float3>
 {
 	std::ofstream fs;
@@ -1149,6 +1247,9 @@ public:
 };
 
 
+
+
+
 class ApplicationWavelets: public Application
 {
 	Ptr<PostProcessor> m_pp;
@@ -1162,7 +1263,8 @@ public:
 		uint2 resolution = uint2(1036,777);
 		m_pp = new PostProcessor(new SharedObjectsFactory(resolution));
 		m_pp->m_input = new InputLoadFromSingleFileOpenEXR("exrChangeLightIntensity\\img_light1_lamp250_pos0.exr");
-		m_pp->m_vecEffects.pushBack(new EffectToneMappingBasedOnWavelets<EffectWCDF53>(new SharedObjectsFactory(resolution), new EffectCLObjectsFactory));
+		//m_pp->m_vecEffects.pushBack(new EffectToneMappingBasedOnWavelets<EffectWCDF53>(new SharedObjectsFactory(resolution), new EffectCLObjectsFactory));
+		m_pp->m_vecEffects.pushBack(new EffectCDF97(new SharedObjectsFactory(resolution), new EffectCLObjectsFactory));
 		m_pp->m_vecEffects.pushBack(new EffectRenderToScreen(0,0,1,1));
 		//m_pp->m_vecEffects.pushBack(new EffectCopyColorAndDepthMaps(new SharedObjectsFactory(resolution)));
 		//m_pp->m_vecEffects.pushBack(new EffectSaveToMatlabASCII("out.txt"));
