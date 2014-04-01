@@ -1035,6 +1035,96 @@ public:
 	  }
 };
 
+class UThorizonConvolutionAsyncOpt2Lines: public UserTransformation
+{
+	cl::Kernel m_kernel;
+	int2 m_resolution;
+	Ptr<ClFacade> m_facade;
+public:
+	UThorizonConvolutionAsyncOpt2Lines(Ptr<ClFacade> facade, int2 resolution):
+	  UserTransformation(facade)
+	  {
+		  m_facade = facade;
+		  m_resolution = resolution;
+		  m_kernel = createKernel(*m_facade->getContext(), "kernels\\wperfCDF97User.cl", "horizonConvolutionAsync2Lines");
+	  }
+	  int getOptCountWorkItems(int size)
+	  {
+		  return size/2 + size%2;
+	  }
+	  int getRequiredLocalMomeryItems(int size)
+	  {
+		  return getOptimalStride(size);
+	  }
+	  void process()
+	  {
+		  try {
+			  Ptr<ClBuffer2D> bufferIn = m_facade->getActiveBuffer();
+			  m_kernel.setArg(0, m_facade->getActiveBuffer()->getClBuffer());
+			  Ptr<ClBuffer2D> bufferResult = m_facade->getUnusedBuffer();
+			  m_kernel.setArg(1, bufferResult->getClBuffer());
+
+			  m_facade->setActiveBuffer(bufferResult);
+
+
+			  int numWorkItemWidth = getOptCountWorkItems(m_resolution.x);
+			  int2 numWorkItems(numWorkItemWidth, 1);
+			  int2 numGlobalItems(numWorkItemWidth, m_resolution.y/2 + (m_resolution.y%2?1:0));
+			  cl::Buffer bufferConstMemory = initConstMemory(bufferResult->getStride(), bufferResult->getSize());
+			  m_kernel.setArg(2, bufferConstMemory);
+			  //initKernelConstMemory(resLvl);
+			  m_kernel.setArg(3, 4*sizeof(cl_float) * getRequiredLocalMomeryItems(m_resolution.x), NULL);
+			  getQueue()->enqueueNDRangeKernel(m_kernel, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
+		  }
+		  catchCLError;
+	  }
+};
+
+
+class UThorizonConvolutionAsyncOpt4Lines: public UserTransformation
+{
+	cl::Kernel m_kernel;
+	int2 m_resolution;
+	Ptr<ClFacade> m_facade;
+public:
+	UThorizonConvolutionAsyncOpt4Lines(Ptr<ClFacade> facade, int2 resolution):
+	  UserTransformation(facade)
+	  {
+		  m_facade = facade;
+		  m_resolution = resolution;
+		  m_kernel = createKernel(*m_facade->getContext(), "kernels\\wperfCDF97User.cl", "horizonConvolutionAsync4Lines");
+	  }
+	  int getOptCountWorkItems(int size)
+	  {
+		  return size/2 + size%2;
+	  }
+	  int getRequiredLocalMomeryItems(int size)
+	  {
+		  return getOptimalStride(size);
+	  }
+	  void process()
+	  {
+		  try {
+			  Ptr<ClBuffer2D> bufferIn = m_facade->getActiveBuffer();
+			  m_kernel.setArg(0, m_facade->getActiveBuffer()->getClBuffer());
+			  Ptr<ClBuffer2D> bufferResult = m_facade->getUnusedBuffer();
+			  m_kernel.setArg(1, bufferResult->getClBuffer());
+
+			  m_facade->setActiveBuffer(bufferResult);
+
+
+			  int numWorkItemWidth = getOptCountWorkItems(m_resolution.x);
+			  int2 numWorkItems(numWorkItemWidth, 1);
+			  int2 numGlobalItems(numWorkItemWidth, m_resolution.y/4 + (m_resolution.y%4?1:0));
+			  cl::Buffer bufferConstMemory = initConstMemory(bufferResult->getStride(), bufferResult->getSize());
+			  m_kernel.setArg(2, bufferConstMemory);
+			  //initKernelConstMemory(resLvl);
+			  m_kernel.setArg(3, 4*sizeof(cl_float) * getRequiredLocalMomeryItems(m_resolution.x), NULL);
+			  getQueue()->enqueueNDRangeKernel(m_kernel, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
+		  }
+		  catchCLError;
+	  }
+};
 
 class UTtransposeInsideTiles: public UserTransformation
 {
@@ -1059,8 +1149,41 @@ public:
 
 			int2 numWorkItems(32, 32);
 			int2 numGlobalItems(bufferIn->getStride(), bufferIn->getAllocLines());
-			cl::Buffer bufferConstMemory = initConstMemory(bufferResult->getStride(), bufferResult->getSize());
-			m_kernel.setArg(2, sizeof(cl_float) * 32 * 32, NULL);
+			  cl::Buffer bufferConstMemory = initConstMemory(bufferResult->getStride(), bufferResult->getSize());
+			  m_kernel.setArg(2, bufferConstMemory);
+			  m_kernel.setArg(3, sizeof(cl_float) * 1024, NULL);
+			getQueue()->enqueueNDRangeKernel(m_kernel, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
+		}
+		catchCLError;
+	}
+};
+
+class UTtransposeInsideTiles2: public UserTransformation
+{
+	cl::Kernel m_kernel;
+	Ptr<ClFacade> m_facade;
+public:
+	UTtransposeInsideTiles2(Ptr<ClFacade> facade):
+	  UserTransformation(facade)
+	{
+		m_facade = facade;
+		m_kernel = createKernel(*m_facade->getContext(), "kernels\\wperfCDF97User.cl", "transposeInTiles2");
+	}
+	void process()
+	{
+		try {
+			Ptr<ClBuffer2D> bufferIn = m_facade->getActiveBuffer();
+			m_kernel.setArg(0, m_facade->getActiveBuffer()->getClBuffer());
+			Ptr<ClBuffer2D> bufferResult = m_facade->getUnusedBuffer();
+			m_kernel.setArg(1, bufferResult->getClBuffer());
+
+			m_facade->setActiveBuffer(bufferResult);
+
+			int2 numWorkItems(32, 32);
+			int2 numGlobalItems(bufferIn->getStride(), bufferIn->getAllocLines());
+			  cl::Buffer bufferConstMemory = initConstMemory(bufferResult->getStride(), bufferResult->getSize());
+			  m_kernel.setArg(2, bufferConstMemory);
+			  m_kernel.setArg(3, sizeof(cl_float) * 1024, NULL);
 			getQueue()->enqueueNDRangeKernel(m_kernel, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
 		}
 		catchCLError;
@@ -1076,7 +1199,7 @@ public:
 	  UserTransformation(facade)
 	{
 		m_facade = facade;
-		m_kernel = createKernel(*m_facade->getContext(), "kernels\\wperfCDF97User.cl", "transposeInTiles");
+		m_kernel = createKernel(*m_facade->getContext(), "kernels\\wperfCDF97User.cl", "transpose");
 	}
 	void process()
 	{
@@ -1090,56 +1213,135 @@ public:
 
 			int2 numWorkItems(32, 32);
 			int2 numGlobalItems(bufferIn->getStride(), bufferIn->getAllocLines());
-			cl::Buffer bufferConstMemory = initConstMemory(bufferResult->getStride(), bufferResult->getSize());
-			m_kernel.setArg(2, sizeof(cl_float) * 32 * 32, NULL);
+			  cl::Buffer bufferConstMemory = initConstMemory(bufferResult->getStride(), bufferResult->getSize());
+			  m_kernel.setArg(2, bufferConstMemory);
+			  m_kernel.setArg(3, sizeof(cl_float) * 1024, NULL);
 			getQueue()->enqueueNDRangeKernel(m_kernel, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
 		}
 		catchCLError;
 	}
 };
 
-/*
-class UThorizonConvolutionAsyncOpt4Lines: public UserTransformation
+
+class UTtransposeNaive: public UserTransformation
+{
+	cl::Kernel m_kernel;
+	Ptr<ClFacade> m_facade;
+public:
+	UTtransposeNaive(Ptr<ClFacade> facade):
+	  UserTransformation(facade)
+	{
+		m_facade = facade;
+		m_kernel = createKernel(*m_facade->getContext(), "kernels\\wperfCDF97User.cl", "transposeInTiles2");
+	}
+	void process()
+	{
+		// transpose:
+		try {
+			Ptr<ClBuffer2D> bufferIn = m_facade->getActiveBuffer();
+			m_kernel.setArg(0, m_facade->getActiveBuffer()->getClBuffer());
+			Ptr<ClBuffer2D> bufferResult = m_facade->getUnusedBuffer();
+			m_kernel.setArg(1, bufferResult->getClBuffer());
+
+			m_facade->setActiveBuffer(bufferResult);
+
+			int2 numWorkItems(32, 32);
+			int2 numGlobalItems(bufferIn->getStride(), bufferIn->getAllocLines());
+			  cl::Buffer bufferConstMemory = initConstMemory(bufferResult->getStride(), bufferResult->getSize());
+			  m_kernel.setArg(2, bufferConstMemory);
+			  m_kernel.setArg(3, sizeof(cl_float) * 1024, NULL);
+			getQueue()->enqueueNDRangeKernel(m_kernel, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
+		} catchCLError;
+	}
+};
+
+
+class UTverticalNaive: public UserTransformation
 {
 	cl::Kernel m_kernel;
 	int2 m_resolution;
 	Ptr<ClFacade> m_facade;
 public:
-	UThorizonConvolutionAsyncOpt4Lines(Ptr<ClFacade> facade, int2 resolution):
-	  UserTransformation(facade)
-	  {
-		  m_facade = facade;
-		  m_resolution = resolution;
-		  m_kernel = createKernel(*m_facade->getContext(), "kernels\\wperfCDF97User.cl", "horizonConvolutionAsyncOpt4Lines");
-	  }
-	  int getOptCountWorkItems(int size)
-	  {
-		  return size/2 + size%2;
-	  }
-	  int getRequiredLocalMomeryItems(int size)
-	  {
-		  return getOptimalStride(size);
-	  }
-	  void process()
-	  {
-		  try {
-			  Ptr<ClBuffer2D> bufferIn = m_facade->getActiveBuffer();
-			  m_kernel.setArg(0, m_facade->getActiveBuffer()->getClBuffer());
-			  Ptr<ClBuffer2D> bufferResult = m_facade->getUnusedBuffer();
-			  m_kernel.setArg(1, bufferResult->getClBuffer());
+	UTverticalNaive(Ptr<ClFacade> facade, int2 resolution):
+		UserTransformation(facade)
+	{
+		m_facade = facade;
+		m_resolution = resolution;
+		m_kernel = createKernel(*m_facade->getContext(), "kernels\\wperfCDF97User.cl", "verticalNaive");
+	}
+	int getOptCountWorkItems(int size)
+	{
+		return size/2 + size%2 + 4;
+	}
+	int getRequiredLocalMomeryItems(int size)
+	{
+		return getOptimalStride(size);
+	}
+	void process()
+	{
+		try {
+			Ptr<ClBuffer2D> bufferIn = m_facade->getActiveBuffer();
+			m_kernel.setArg(0, m_facade->getActiveBuffer()->getClBuffer());
+			Ptr<ClBuffer2D> bufferResult = m_facade->getUnusedBuffer();
+			m_kernel.setArg(1, bufferResult->getClBuffer());
 
-			  m_facade->setActiveBuffer(bufferResult);
+			m_facade->setActiveBuffer(bufferResult);
+			
 
+			int numWorkItemHeight = getOptCountWorkItems(m_resolution.y);
+			int2 numWorkItems(1, numWorkItemHeight);
+			int2 numGlobalItems(m_resolution.x, numWorkItemHeight);
+			cl::Buffer bufferConstMemory = initConstMemory(bufferResult->getStride(), bufferResult->getSize());
+			m_kernel.setArg(2, bufferConstMemory);
+			//initKernelConstMemory(resLvl);
+			m_kernel.setArg(3, sizeof(cl_float) * getRequiredLocalMomeryItems(m_resolution.x), NULL);
+			getQueue()->enqueueNDRangeKernel(m_kernel, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
+		}
+		catchCLError;
+	}
+};
 
-			  int numWorkItemWidth = getOptCountWorkItems(m_resolution.x);
-			  int2 numWorkItems(numWorkItemWidth, 1);
-			  int2 numGlobalItems(numWorkItemWidth, m_resolution.y/4);
-			  cl::Buffer bufferConstMemory = initConstMemory(bufferResult->getStride(), bufferResult->getSize());
-			  m_kernel.setArg(2, bufferConstMemory);
-			  //initKernelConstMemory(resLvl);
-			  m_kernel.setArg(3, 4*sizeof(cl_float) * getRequiredLocalMomeryItems(m_resolution.x), NULL);
-			  getQueue()->enqueueNDRangeKernel(m_kernel, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
-		  }
-		  catchCLError;
-	  }
-};*/
+class UTverticalOverlappingUpperPart: public UserTransformation
+{
+	cl::Kernel m_kernel;
+	int2 m_resolution;
+	Ptr<ClFacade> m_facade;
+public:
+	UTverticalOverlappingUpperPart(Ptr<ClFacade> facade, int2 resolution):
+		UserTransformation(facade)
+	{
+		m_facade = facade;
+		m_resolution = resolution;
+		m_kernel = createKernel(*m_facade->getContext(), "kernels\\wperfCDF97User.cl", "verticalOverlapping");
+	}
+	int getOptCountWorkItems(int size)
+	{
+		int workSize = 64;
+		return 32*(size/workSize +(size%workSize?1:0));
+	}
+	int getRequiredLocalMomeryItems(int size)
+	{
+		return getOptimalStride(size);
+	}
+	void process()
+	{
+		try {
+			Ptr<ClBuffer2D> bufferIn = m_facade->getActiveBuffer();
+			m_kernel.setArg(0, m_facade->getActiveBuffer()->getClBuffer());
+			Ptr<ClBuffer2D> bufferResult = m_facade->getUnusedBuffer();
+			m_kernel.setArg(1, bufferResult->getClBuffer());
+
+			m_facade->setActiveBuffer(bufferResult);
+
+			int numWorkItemHeight = getOptCountWorkItems(m_resolution.y);
+			int2 numWorkItems(32, 32);
+			int2 numGlobalItems((m_resolution.x/32 + (m_resolution.x%32?1:0))*32, numWorkItemHeight);
+			cl::Buffer bufferConstMemory = initConstMemory(bufferResult->getStride(), bufferResult->getSize());
+			m_kernel.setArg(2, bufferConstMemory);
+			//initKernelConstMemory(resLvl);
+			m_kernel.setArg(3, sizeof(cl_float) * (1024 * 2 + 16 * 32), NULL);
+			getQueue()->enqueueNDRangeKernel(m_kernel, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
+		}
+		catchCLError;
+	}
+};

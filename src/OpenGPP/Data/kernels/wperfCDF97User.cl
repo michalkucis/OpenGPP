@@ -155,7 +155,7 @@ __kernel void copyGlobalLocalGlobalAsync(
 
 
 
-
+//----------------------------------------------------------------
 
 
 
@@ -421,8 +421,8 @@ __kernel void horizonLiftingSync2(
 {
 	int2 myID = {get_global_id(0), get_global_id(1)};
 	// load elements:
-	localMemory[myID.x] = in[myID.x];
-	localMemory[myID.x+get_global_size(0)] = in[myID.x+get_global_size(0)];
+	localMemory[myID.x] = in[myID.x + constMemory->bufferStride*get_global_id(1)];
+	localMemory[myID.x+get_global_size(0)] = in[myID.x+get_global_size(0) + constMemory->bufferStride*get_global_id(1)];
 	barrier(CLK_LOCAL_MEM_FENCE);
 
 	// init variables:
@@ -465,8 +465,8 @@ __kernel void horizonLiftingSync3(
 {
 	int2 myID = {get_global_id(0), get_global_id(1)};
 	// load elements:
-	localMemory[myID.x] = in[myID.x];
-	localMemory[myID.x+get_global_size(0)] = in[myID.x+get_global_size(0)];
+	localMemory[myID.x] = in[myID.x + constMemory->bufferStride*get_global_id(1)];
+	localMemory[myID.x+get_global_size(0)] = in[myID.x+get_global_size(0) + constMemory->bufferStride*get_global_id(1)];
 	barrier(CLK_LOCAL_MEM_FENCE);
 	if (myID.x < 8)
 		localMemory[myID.x] = localMemory[16 - myID.x];
@@ -519,13 +519,12 @@ __kernel void horizonLiftingAsync(
 {
 	int2 myID = {get_global_id(0), get_global_id(1)};
 	// load elements:
-	localMemory[myID.x + 4] = in[myID.x];
-	localMemory[myID.x + 4 + get_global_size(0)] = in[myID.x+get_global_size(0)];
-	barrier(CLK_LOCAL_MEM_FENCE);
-
-	if (myID.x < 4)
-		localMemory[myID.x] = localMemory[8 - myID.x];
-	else if (myID.x < 8)
+	float l1 = in[myID.x + constMemory->bufferStride*get_global_id(1)];
+	localMemory[myID.x + 4] = l1;
+	localMemory[myID.x + 4 + get_global_size(0)] = in[myID.x+get_global_size(0) + constMemory->bufferStride*get_global_id(1)];
+	if (myID.x <= 4 && myID.x >= 1)
+		localMemory[4 - myID.x] = l1;
+	else if (myID.x >= get_global_size(0)-4 && myID.x < get_global_size(0)-1)
 		localMemory[constMemory->resolution.x + myID.x-4] = localMemory[constMemory->resolution.x - myID.x + 3];
 	barrier(CLK_LOCAL_MEM_FENCE);
 
@@ -568,8 +567,8 @@ __kernel void horizonConvolutionAsync(
 {
 	int2 myID = {get_global_id(0), get_global_id(1)};
 	// load elements:
-	localMemory[myID.x + 4] = in[myID.x];
-	localMemory[myID.x + 4 + get_global_size(0)] = in[myID.x+get_global_size(0)];
+	localMemory[myID.x + 4] = in[myID.x + constMemory->bufferStride*get_global_id(1)];
+	localMemory[myID.x + 4 + get_global_size(0)] = in[myID.x+get_global_size(0) + constMemory->bufferStride*get_global_id(1)];
 	barrier(CLK_LOCAL_MEM_FENCE);
 
 	if (myID.x < 4)
@@ -616,8 +615,8 @@ __kernel void horizonConvolutionAsyncOpt(
 {
 	int2 myID = {get_global_id(0), get_global_id(1)};
 	// load elements:
-	localMemory[myID.x + 4] = in[myID.x];
-	localMemory[myID.x + 4 + get_global_size(0)] = in[myID.x+get_global_size(0)];
+	localMemory[myID.x + 4] = in[myID.x + constMemory->bufferStride*get_global_id(1)];
+	localMemory[myID.x + 4 + get_global_size(0)] = in[myID.x+get_global_size(0) + constMemory->bufferStride*get_global_id(1)];
 	barrier(CLK_LOCAL_MEM_FENCE);
 
 	if (myID.x < 4)
@@ -646,8 +645,7 @@ __kernel void horizonConvolutionAsyncOpt(
 	f1 += arr[base+6] * -0.078223f;
 	f1 += arr[base+7] * 0.016864f;
 	f1 += arr[base+8] * 0.026749f;
-	out[myID.x + constMemory->bufferStride*myID.y] = f1;	
-
+	
 	int base2 = myID.x*2+2;
 	float f2 = arr[base2] * -0.091272f;
 	f2 += arr[base2+1] * -0.057544f;
@@ -659,155 +657,217 @@ __kernel void horizonConvolutionAsyncOpt(
 
 	// save elements:
 
+	out[myID.x + constMemory->bufferStride*myID.y] = f1;
 	out[myID.x+half + constMemory->bufferStride*myID.y] = f2;
 }
+
+__kernel void horizonConvolutionAsync2Lines(
+	__global read_only float* in,
+	__global write_only float* out,
+	__constant StructConstMemory* constMemory,
+	__local float2* localMemory)
+{
+	int2 myID = {get_global_id(0), get_global_id(1)};
+	// load elements:
+	localMemory[myID.x + 4].x = in[myID.x + constMemory->bufferStride*(get_global_id(1)*2+0)];
+	localMemory[myID.x + 4 + get_global_size(0)].x = in[myID.x+get_global_size(0) + constMemory->bufferStride*(get_global_id(1)*2+0)];
+	localMemory[myID.x + 4].y = in[myID.x + constMemory->bufferStride*(get_global_id(1)*2+1)];
+	localMemory[myID.x + 4 + get_global_size(0)].y = in[myID.x+get_global_size(0) + constMemory->bufferStride*(get_global_id(1)*2+1)];
+	barrier(CLK_LOCAL_MEM_FENCE);
+
+	if (myID.x < 4)
+		localMemory[myID.x] = localMemory[8 - myID.x];
+	else if (myID.x < 8)
+		localMemory[constMemory->resolution.x + myID.x-4] = localMemory[constMemory->resolution.x - myID.x + 3];
+	barrier(CLK_LOCAL_MEM_FENCE);
+
+	// init variables:
+	__local float2* arr = localMemory;
+	int stride = constMemory->bufferStride;
+	int half = constMemory->halfResolution.x;
+	int resX = constMemory->resolution.x;
+	int resY = constMemory->resolution.y;
+
+	
+	// compute:
+
+	int base = myID.x*2;
+	float2 f1 = arr[base] * 0.026749f;
+	f1 += arr[base+1] * 0.016864f;
+	f1 += arr[base+2] * -0.078223f;
+	f1 += arr[base+3] * -0.266864f;
+	f1 += arr[base+4] * 0.602949f;
+	f1 += arr[base+5] * -0.266864f;
+	f1 += arr[base+6] * -0.078223f;
+	f1 += arr[base+7] * 0.016864f;
+	f1 += arr[base+8] * 0.026749f;
+	
+	int base2 = myID.x*2+2;
+	float2 f2 = arr[base2] * -0.091272f;
+	f2 += arr[base2+1] * -0.057544f;
+	f2 += arr[base2+1] * 0.591272f;
+	f2 += arr[base2+1] * 1.115087f;
+	f2 += arr[base2+1] * 0.591272f;
+	f2 += arr[base2+1] * -0.057544f;
+	f2 += arr[base2+1] * -0.091272f;
+
+	// save elements:
+
+	out[myID.x + constMemory->bufferStride*(get_global_id(1)*2+0)] = f1.x;
+	out[myID.x+get_global_size(0) + constMemory->bufferStride*(get_global_id(1)*2+0)] = f2.x;
+	out[myID.x + constMemory->bufferStride*(get_global_id(1)*2+1)] = f1.y;	
+	out[myID.x+get_global_size(0) + constMemory->bufferStride*(get_global_id(1)*2+1)] = f2.y;
+}
+
+__kernel void horizonConvolutionAsync4Lines(
+	__global read_only float* in,
+	__global write_only float* out,
+	__constant StructConstMemory* constMemory,
+	__local float4* localMemory)
+{
+	int2 myID = {get_global_id(0), get_global_id(1)};
+	// load elements:
+	localMemory[myID.x + 4].x = in[myID.x + constMemory->bufferStride*(get_global_id(1)*4+0)];
+	localMemory[myID.x + 4 + get_global_size(0)].x = in[myID.x+get_global_size(0) + constMemory->bufferStride*(get_global_id(1)*4+0)];
+	localMemory[myID.x + 4].y = in[myID.x + constMemory->bufferStride*(get_global_id(1)*4+1)];
+	localMemory[myID.x + 4 + get_global_size(0)].y = in[myID.x+get_global_size(0) + constMemory->bufferStride*(get_global_id(1)*4+1)];
+	localMemory[myID.x + 4].z = in[myID.x + constMemory->bufferStride*(get_global_id(1)*4+2)];
+	localMemory[myID.x + 4 + get_global_size(0)].z = in[myID.x+get_global_size(0) + constMemory->bufferStride*(get_global_id(1)*4+2)];
+	localMemory[myID.x + 4].w = in[myID.x + constMemory->bufferStride*(get_global_id(1)*4+3)];
+	localMemory[myID.x + 4 + get_global_size(0)].w = in[myID.x+get_global_size(0) + constMemory->bufferStride*(get_global_id(1)*4+3)];
+	barrier(CLK_LOCAL_MEM_FENCE);
+
+	if (myID.x < 4)
+		localMemory[myID.x] = localMemory[8 - myID.x];
+	else if (myID.x < 8)
+		localMemory[constMemory->resolution.x + myID.x-4] = localMemory[constMemory->resolution.x - myID.x + 3];
+	barrier(CLK_LOCAL_MEM_FENCE);
+
+	// init variables:
+	__local float4* arr = localMemory;
+	int stride = constMemory->bufferStride;
+	int half = constMemory->halfResolution.x;
+	int resX = constMemory->resolution.x;
+	int resY = constMemory->resolution.y;
+
+	
+	// compute:
+
+	int base = myID.x*2;
+	float4 f1 = arr[base] * 0.026749f;
+	f1 += arr[base+1] * 0.016864f;
+	f1 += arr[base+2] * -0.078223f;
+	f1 += arr[base+3] * -0.266864f;
+	f1 += arr[base+4] * 0.602949f;
+	f1 += arr[base+5] * -0.266864f;
+	f1 += arr[base+6] * -0.078223f;
+	f1 += arr[base+7] * 0.016864f;
+	f1 += arr[base+8] * 0.026749f;
+	
+	int base2 = myID.x*2+2;
+	float4 f2 = arr[base2] * -0.091272f;
+	f2 += arr[base2+1] * -0.057544f;
+	f2 += arr[base2+2] * 0.591272f;
+	f2 += arr[base2+3] * 1.115087f;
+	f2 += arr[base2+4] * 0.591272f;
+	f2 += arr[base2+5] * -0.057544f;
+	f2 += arr[base2+6] * -0.091272f;
+
+	// save elements:
+
+	out[myID.x + constMemory->bufferStride*(get_global_id(1)*4+0)] = f1.x;
+	out[myID.x+get_global_size(0) + constMemory->bufferStride*(get_global_id(1)*4+0)] = f2.x;
+	out[myID.x + constMemory->bufferStride*(get_global_id(1)*4+1)] = f1.y;	
+	out[myID.x+get_global_size(0) + constMemory->bufferStride*(get_global_id(1)*4+1)] = f2.y;
+	out[myID.x + constMemory->bufferStride*(get_global_id(1)*4+2)] = f1.z;
+	out[myID.x+get_global_size(0) + constMemory->bufferStride*(get_global_id(1)*4+2)] = f2.z;	
+	out[myID.x + constMemory->bufferStride*(get_global_id(1)*4+3)] = f1.w;
+	out[myID.x+get_global_size(0) + constMemory->bufferStride*(get_global_id(1)*4+3)] = f2.w;
+}
+
+
+//-------------------------------------------------------------
 
 
 __kernel void transposeInTiles(
 	__global read_only float* in,
 	__global write_only float* out,
-	__local float* localF)
+	__constant StructConstMemory* constMemory,
+	__local float* localMemory)
 {
-	int offGlobal = get_global_id(0) + get_global_id(1)*get_global_size(0);
-	int offLocalIn = get_local_id(0) + get_local_id(1)*get_local_size(0);
-	int offLocalOut = get_local_id(1) + get_local_id(0)*get_local_size(1);
-
-	float value = in[offGlobal];
-	localF[offLocalIn] = value;
-
+	int offsetLocal1 = get_local_id(0) + get_local_size(0)*(get_local_id(1));
+	int offsetLocal2 = get_local_id(1) + get_local_size(1)*(get_local_id(0));
+	int offsetGlobal = get_global_id(0) + constMemory->bufferStride*(get_global_id(1));
+	//int2 myID = {get_global_id(0), get_global_id(1)};
+	// load elements:
+	localMemory[offsetLocal1] = in[offsetGlobal];	
 	barrier(CLK_LOCAL_MEM_FENCE);
+	
+	//// init variables:
+	__local float* arr = localMemory;
 
-	value = localF[offLocalOut];
-	out[offGlobal] = value;
+	out[offsetGlobal] = arr[offsetLocal2];
 }
+
+__kernel void transposeInTiles2(
+	__global read_only float* in,
+	__global write_only float* out,
+	__constant StructConstMemory* constMemory,
+	__local float* localMemory)
+{
+	int offsetLocal1 = mad24(get_local_size(0),get_local_id(1),get_local_id(0));
+	int offsetLocal2 = mad24(get_local_size(1),get_local_id(0),get_local_id(1));
+	int offsetGlobal = mad24(convert_uint(constMemory->bufferStride),get_global_id(1),get_global_id(0));
+	//int2 myID = {get_global_id(0), get_global_id(1)};
+	// load elements:
+	localMemory[offsetLocal1] = in[offsetGlobal];	
+	barrier(CLK_LOCAL_MEM_FENCE);
+	
+	//// init variables:
+	__local float* arr = localMemory;
+
+	out[offsetGlobal] = arr[offsetLocal2];
+}
+
 
 __kernel void transpose(
 	__global read_only float* in,
 	__global write_only float* out,
-	__local float* localF)
+	__constant StructConstMemory* constMemory,
+	__local float* localMemory)
 {
-	int offGlobalIn = get_global_id(0) + get_global_id(1)*get_global_size(0);
-	int offGlobalOut = (get_group_id(1)*get_local_size(1)+get_local_id(0))*get_global_size(0)
+	int offGlobalIn = get_global_id(0) + get_global_id(1)*constMemory->bufferStride;
+	int offGlobalOut = (get_group_id(1)*get_local_size(1)+get_local_id(0))*constMemory->bufferStride
 		+ get_group_id(0)*get_local_size(0) + get_local_id(1);
 	int offLocalIn = get_local_id(0) + get_local_id(1)*get_local_size(0);
 	int offLocalOut = get_local_id(1) + get_local_id(0)*get_local_size(1);
 
 	float value = in[offGlobalIn];
-	localF[offLocalIn] = value;
+	localMemory[offLocalIn] = value;
 
 	barrier(CLK_LOCAL_MEM_FENCE);
 
-	value = localF[offLocalOut];
-	out[offLocalOut] = value;
+	value = localMemory[offLocalOut];
+	out[offGlobalOut] = value;
 }
 
-//__kernel void horizonConvolutionAsyncOpt4Lines(
-//	__global read_only float* in,
-//	__global write_only float* out,
-//	__constant StructConstMemory* constMemory,
-//	__local float4* localMemory)
-//{
-//	int2 myID = {get_global_id(0), get_global_id(1)};
-//	// load elements:
-//	localMemory[myID.x + 4] = in[myID.x];
-//	localMemory[myID.x + 4 + get_global_size(0)] = in[myID.x+get_global_size(0)];
-//	barrier(CLK_LOCAL_MEM_FENCE);
-//
-//	if (myID.x < 4)
-//		localMemory[myID.x] = localMemory[8 - myID.x];
-//	else if (myID.x < 8)
-//		localMemory[constMemory->resolution.x + myID.x-4] = localMemory[constMemory->resolution.x - myID.x + 3];
-//
-//	// init variables:
-//	__local float* arr = localMemory;
-//	int stride = constMemory->bufferStride;
-//	int half = constMemory->halfResolution.x;
-//	int resX = constMemory->resolution.x;
-//	int resY = constMemory->resolution.y;
-//
-//	
-//	// compute:
-//
-//	int base = myID.x*2;
-//	float f1 = arr[base] * 0.026749f;
-//	f1 += arr[base+1] * -0.016864f;
-//	f1 += arr[base+2] * -0.078223f;
-//	f1 += arr[base+3] * 0.266864f;
-//	f1 += arr[base+4] * 0.602949f;
-//	f1 += arr[base+5] * 0.266864f;
-//	f1 += arr[base+6] * -0.078223f;
-//	f1 += arr[base+7] * -0.016864f;
-//	f1 += arr[base+8] * 0.026749f;
-//	out[myID.x + constMemory->bufferStride*myID.y] = f1;	
-//
-//	int base2 = myID.x*2+2;
-//	float f2 = arr[base2] * 0.091272f;
-//	f2 += arr[base2+1] * -0.057544f;
-//	f2 += arr[base2+1] * -0.591272f;
-//	f2 += arr[base2+1] * 1.115087f;
-//	f2 += arr[base2+1] * -0.591272f;
-//	f2 += arr[base2+1] * -0.057544f;
-//	f2 += arr[base2+1] * 0.091272f;
-//
-//	// save elements:
-//
-//	out[myID.x+half + constMemory->bufferStride*myID.y] = f2;
-//}
+__kernel void transposeNaive(
+	__global read_only float* in,
+	__global write_only float* out,
+	__constant StructConstMemory* constMemory,
+	__local float* localMemory)
+{
+	int offGlobalIn = get_global_id(0) + get_global_id(1)*constMemory->bufferStride;
+	int offGlobalOut = get_global_id(1) + get_global_id(0)*get_global_size(1);
 
-//__kernel void horizonConvolutionNoSync(
-//	__global read_only float* in,
-//	__global write_only float* out,
-//	__constant StructConstMemory* constMemory,
-//	__local float* localMemory)
-//{
-//	int2 myID = {get_global_id(0), get_global_id(1)};
-//	// load elements:
-//	event_t eventLoad =	async_work_group_copy(
-//		localMemory + 4,
-//		in+constMemory->bufferStride*myID.y,
-//		constMemory->resolution.x,
-//		0);
-//	wait_group_events(1, &eventLoad);
-//	
-//	// init variables:
-//	__local float* arr = localMemory;
-//	int stride = constMemory->bufferStride;
-//	int half = constMemory->halfResolution.x;
-//	int resX = constMemory->resolution.x;
-//	int resY = constMemory->resolution.y;
-//	
-//	//if (myID.x < 4)
-//	//{
-//	//	localMemory[myID.x] = localMemory[7 - myID.x];
-//	//}
-//	//else if
-//	// compute:
-//	arr[nd2] += CDF97_ALPHA * (arr[nd1] + arr[nd3]);
-//	barrier(CLK_LOCAL_MEM_FENCE);
-//	arr[nd1] += CDF97_BETA * (arr[nd0] + arr[nd2]);
-//	barrier(CLK_LOCAL_MEM_FENCE);
-//	arr[nd2] += CDF97_GAMMA * (arr[nd1] + arr[nd3]);
-//	barrier(CLK_LOCAL_MEM_FENCE);
-//	arr[nd1] += CDF97_DELTA * (arr[nd0] + arr[nd2]);
-//	barrier(CLK_LOCAL_MEM_FENCE);
-//
-//	arr[nd1] *= CDF97_INVZETA;
-//	arr[nd2] *= CDF97_ZETA;
-//	
-//	// save elements:
-//	/*event_t eventSave = async_work_group_copy(
-//		out+constMemory->bufferStride*myID.y,
-//		localMemory,
-//		constMemory->resolution.x,
-//		0);
-//		*/
-//
-//	out[myID.x + constMemory->bufferStride*myID.y] = arr[nd1];
-//	out[myID.x+half + constMemory->bufferStride*myID.y] = arr[nd2];
-//}
+	float value = in[offGlobalIn];
+	out[offGlobalOut] = value;
+}
+
+//-----------------------------------------------------------
 
 
-__kernel void vertical2in1Buffer(
+__kernel void verticalNaive(
 	__global read_only float* in,
 	__global write_only float* out,
 	__constant StructConstMemory* constMemory,
@@ -849,111 +909,96 @@ __kernel void vertical2in1Buffer(
 }
 
 
-__kernel void vertical2in1BufferAsync(
+__kernel void verticalOverlapping(
 	__global read_only float* in,
 	__global write_only float* out,
 	__constant StructConstMemory* constMemory,
-	__local float* localMemory)
+	__local float* arr)
 {
-	// init variables:
-	int2 myID = {get_global_id(0), get_global_id(1)};
-	__local float* arr = localMemory;
-	int stride = constMemory->bufferStride;
-	int half = constMemory->halfResolution.y;
-	int resX = constMemory->resolution.x;
-	int resY = constMemory->resolution.y;
-	int nd0 = abs (myID.y * 2 - 1);
-	int nd1 = myID.y * 2;
-	int nd2 = nd1 + 1 >= resY ? nd1 - 1 : nd1 + 1;
-	int nd3 = nd1 + 2 >= resY ? 2*resY - nd1 - 4 : nd1 + 2;
+	int offsetBuffer1 = get_global_id(0) + (get_group_id(1)*2*get_local_size(1)+get_local_id(1)) *constMemory->bufferStride;
+	int offsetBuffer2 = offsetBuffer1 + get_local_size(1)*constMemory->bufferStride;
+	int localOffset1 = get_local_id(0) + (get_local_id(1)+4)*get_local_size(0);
+	int localOffset2 = localOffset1 + get_local_size(1)*get_local_size(0);
 
-	// load elements:
-	event_t eventLoad = async_work_group_strided_copy(
-		localMemory,
-		in + myID.x,
-		resY,
-		stride,
-		0);
-		
-	wait_group_events(1, &eventLoad);
+	arr[localOffset1] = in[offsetBuffer1];
+	arr[localOffset2] = in[offsetBuffer2];
+	if(get_local_id(1) <= 2 && get_local_id(0) > 0)
+		arr[localOffset1 - get_local_id(1)*get_local_size(0)*2] = arr[localOffset1];
+	barrier(CLK_LOCAL_MEM_FENCE);
+	if(get_local_id(1) <= 31 && get_local_id(1) > 27)
+		arr[localOffset2 + (get_local_size(1)-get_local_id(1))*get_local_size(0)*2] = arr[localOffset2];
+	barrier(CLK_LOCAL_MEM_FENCE);
 
-	localMemory[myID.y] = in[myID.x + myID.y*constMemory->bufferStride];
-	localMemory[myID.y+half] = in[myID.x + (myID.y+half)*constMemory->bufferStride];
+	int base = get_local_id(0) + (get_local_id(1)*2+4)*get_local_size(0);
+	float f1 = arr[base] * 0.026749f;
+	f1 += arr[base+1] * 0.016864f;
+	f1 += arr[base+2] * -0.078223f;
+	f1 += arr[base+3] * -0.266864f;
+	f1 += arr[base+4] * 0.602949f;
+	f1 += arr[base+5] * -0.266864f;
+	f1 += arr[base+6] * -0.078223f;
+	f1 += arr[base+7] * 0.016864f;
+	f1 += arr[base+8] * 0.026749f;
 	
-	// compute:
-	arr[nd2] += CDF97_ALPHA * (arr[nd1] + arr[nd3]);
-	barrier(CLK_LOCAL_MEM_FENCE);
-	arr[nd1] += CDF97_BETA * (arr[nd0] + arr[nd2]);
-	barrier(CLK_LOCAL_MEM_FENCE);
-	arr[nd2] += CDF97_GAMMA * (arr[nd1] + arr[nd3]);
-	barrier(CLK_LOCAL_MEM_FENCE);
-	arr[nd1] += CDF97_DELTA * (arr[nd0] + arr[nd2]);
-	barrier(CLK_LOCAL_MEM_FENCE);
+	int base2 = base + get_local_size(0)*2;
+	float f2 = arr[base2] * -0.091272f;
+	f2 += arr[base2+1] * -0.057544f;
+	f2 += arr[base2+2] * 0.591272f;
+	f2 += arr[base2+3] * 1.115087f;
+	f2 += arr[base2+4] * 0.591272f;
+	f2 += arr[base2+5] * -0.057544f;
+	f2 += arr[base2+6] * -0.091272f;
 
-	arr[nd1] *= CDF97_INVZETA;
-	arr[nd2] *= CDF97_ZETA;
-	
-	// save elements:
-	async_work_group_strided_copy(
-		out + myID.x,
-		localMemory,
-		resY,
-		stride,
-		0);
+	out[get_global_id(0) + get_global_id(1) * constMemory->bufferStride] = f1;
+	out[get_global_id(0) + (get_global_id(1) + constMemory->halfResolution.y) * constMemory->bufferStride] = f2;
+
+
+	//int2 myID = {get_global_id(0), get_global_id(1)};
+	//__local float* arr = localMemory;
+	//int stride = constMemory->bufferStride;
+	//int half = constMemory->halfResolution.y;
+	//int resX = constMemory->resolution.x;
+	//int resY = constMemory->resolution.y;
+	//int nd1 = get_local_id(0) + (get_local_id(1)*2)*get_local_size(0);
+	//int nd2 = nd1 + get_local_size(0);
+	//int nd0 = ((nd1 - get_local_size(0))<0) ? nd1 : nd1 - get_local_size(0);
+	//int nd3 = (nd2 + get_local_size(0))%(get_local_size(0)*get_local_size(1)*2);
+
+	//int inAddr1; 
+	//if (get_global_id(1) <= 1) 
+	//	inAddr1 = get_local_id(0) + (4-get_local_id(1)*2)*constMemory->bufferStride;
+	//else
+	//	inAddr1 = get_global_id(0) + (get_global_id(1)*2 + get_group_id(1)*(-8) + (-4))*constMemory->bufferStride;
+	//int inAddr2 = inAddr1 + constMemory->bufferStride;
+
+	//if (inAddr2 >= constMemory->resolution.y*constMemory->bufferStride)
+	//	inAddr2 = get_global_id(0) + (2*constMemory->resolution.y-3-get_global_id(1)*2 - get_group_id(1)*(-8) - (-4))*constMemory->bufferStride;
+	//if (inAddr1 >= constMemory->resolution.y*constMemory->bufferStride)
+	//	inAddr1 = get_global_id(0) + (2*constMemory->resolution.y-2-get_global_id(1)*2 - get_group_id(1)*(-8) - (-4))*constMemory->bufferStride;
+
+
+	//// load elements:
+	//localMemory[nd1] = in[inAddr1];
+	//localMemory[nd2] = in[inAddr2];
+	//barrier(CLK_LOCAL_MEM_FENCE);
+
+	//// compute:
+	//arr[nd2] += CDF97_ALPHA * (arr[nd1] + arr[nd3]);
+	//barrier(CLK_LOCAL_MEM_FENCE);
+	////arr[nd1] += CDF97_BETA * (arr[nd0] + arr[nd2]);
+	////barrier(CLK_LOCAL_MEM_FENCE);
+	//arr[nd2] += CDF97_GAMMA * (arr[nd1] + arr[nd3]);
+	//barrier(CLK_LOCAL_MEM_FENCE);
+	////arr[nd1] += CDF97_DELTA * (arr[nd0] + arr[nd2]);
+	////barrier(CLK_LOCAL_MEM_FENCE);
+
+	//arr[nd1] *= CDF97_INVZETA;
+	//arr[nd2] *= CDF97_ZETA;
+	//
+	//// save elements:
+	//if ((get_local_id(1) >= 2) && get_local_id(1) < get_local_size(1)-2)
+	//{
+	//	out[myID.x + constMemory->bufferStride*myID.y] = arr[nd1];
+	//	out[myID.x + constMemory->bufferStride*(myID.y+half)] = arr[nd2];
+	//}
 }
-
-
-
-
-
-//__kernel void horizon2in1Buffer(
-//	__global read_only float* in,
-//	__global write_only float* out,
-//	__constant StructConstMemory* constMemory,
-//	__local float* localMemory)
-//{
-//	int2 myID = {get_global_id(0), get_global_id(1)};
-//	// load elements:
-//	event_t eventLoad =	async_work_group_copy(
-//		localMemory,
-//		in+constMemory->bufferStride*myID.y,
-//		constMemory->resolution.x,
-//		0);
-//	wait_group_events(1, &eventLoad);
-//	
-//	// init variables:
-//	__local float* arr = localMemory;
-//	int stride = constMemory->bufferStride;
-//	int half = constMemory->halfResolution.x;
-//	int resX = constMemory->resolution.x;
-//	int resY = constMemory->resolution.y;
-//	int nd0 = abs (myID.x * 2 - 1);
-//	int nd1 = myID.x * 2;
-//	int nd2 = nd1 + 1 >= resX ? nd1 - 1 : nd1 + 1;
-//	int nd3 = nd1 + 2 >= resX ? 2*resX - nd1 - 4 : nd1 + 2;
-//
-//	
-//	// compute:
-//	arr[nd2] += CDF97_ALPHA * (arr[nd1] + arr[nd3]);
-//	barrier(CLK_LOCAL_MEM_FENCE);
-//	arr[nd1] += CDF97_BETA * (arr[nd0] + arr[nd2]);
-//	barrier(CLK_LOCAL_MEM_FENCE);
-//	arr[nd2] += CDF97_GAMMA * (arr[nd1] + arr[nd3]);
-//	barrier(CLK_LOCAL_MEM_FENCE);
-//	arr[nd1] += CDF97_DELTA * (arr[nd0] + arr[nd2]);
-//	barrier(CLK_LOCAL_MEM_FENCE);
-//
-//	arr[nd1] *= CDF97_INVZETA;
-//	arr[nd2] *= CDF97_ZETA;
-//	
-//	// save elements:
-//	/*event_t eventSave = async_work_group_copy(
-//		out+constMemory->bufferStride*myID.y,
-//		localMemory,
-//		constMemory->resolution.x,
-//		0);
-//		*/
-//
-//	out[myID.x + constMemory->bufferStride*myID.y] = arr[nd1];
-//	out[myID.x+half + constMemory->bufferStride*myID.y] = arr[nd2];
-//}

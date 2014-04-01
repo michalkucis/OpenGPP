@@ -1,5 +1,6 @@
 #pragma once
 #include "userTransformations.h"
+#include <sstream>
 
 class Test
 {
@@ -86,9 +87,9 @@ class TestIO4: public Test
 	void init(Ptr<ClFacade> facade)
 	{
 		int2 res (1036,777);
-		//m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
+		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
 		m_vecUT.pushBack(new UTcopyGlobalLocalLine(facade, res));
-		//m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
+		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
 	}
 	int getPerformsCount()
 	{
@@ -106,9 +107,9 @@ class TestIO5: public Test
 	void init(Ptr<ClFacade> facade)
 	{
 		int2 res (1036,777);
-		//m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
+		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
 		m_vecUT.pushBack(new UTcopyGlobalLocalColumn(facade, res));
-		//m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
+		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
 	}
 	int getPerformsCount()
 	{
@@ -125,9 +126,9 @@ class TestIO6: public Test
 	void init(Ptr<ClFacade> facade)
 	{
 		int2 res (1036,777);
-		//m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
+		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
 		m_vecUT.pushBack(new UTcopyGlobalLocalTide(facade, res));
-		//m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
+		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
 	}
 	int getPerformsCount()
 	{
@@ -147,13 +148,13 @@ class TestMemoryUsingLocal: public Test
 		int2 res (1036,777);
 	
 		
-		//m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
+		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
 		m_vecUT.pushBack(new UThorizonMemUsingLocalMemory(facade, res));
-		//m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
+		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
 	}
 	int getPerformsCount()
 	{
-		return 4000;
+		return 100;
 	}
 	string getName()
 	{
@@ -169,13 +170,13 @@ class TestMemoryUsingPrivate: public Test
 		int2 res (1036,777);
 	
 		
-		//m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
+		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
 		m_vecUT.pushBack(new UThorizonMemUsingPrivateMemory(facade, res));
-		//m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
+		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
 	}
 	int getPerformsCount()
 	{
-		return 4000;
+		return 100;
 	}
 	string getName()
 	{
@@ -193,13 +194,13 @@ class TestHorizonSyncLiftingAsyncCopy: public Test
 		int2 res (1036,777);
 	
 		
-		//m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
+		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
 		m_vecUT.pushBack(new UThorizonLiftingSync(facade, res));
-		//m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
+		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
 	}
 	int getPerformsCount()
 	{
-		return 4000;
+		return 100;
 	}
 	string getName()
 	{
@@ -212,13 +213,13 @@ class TestHorizonSyncLiftingThreadCopy: public Test
 	void init(Ptr<ClFacade> facade)
 	{
 		int2 res (1036,777);
-		//m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
+		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
 		m_vecUT.pushBack(new UThorizonLiftingSync2(facade, res));
-		//m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
+		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
 	}
 	int getPerformsCount()
 	{
-		return 4000;
+		return 100;
 	}
 	string getName()
 	{
@@ -231,13 +232,13 @@ class TestHorizonSyncLiftingThreadCopyMoreThreads: public Test
 	void init(Ptr<ClFacade> facade)
 	{
 		int2 res (1036,777);
-		//m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
+		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
 		m_vecUT.pushBack(new UThorizonLiftingSync3(facade, res));
-		//m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
+		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
 	}
 	int getPerformsCount()
 	{
-		return 4000;
+		return 100;
 	}
 	string getName()
 	{
@@ -250,13 +251,13 @@ class TestHorizonAsyncLiftingThreadCopy: public Test
 	void init(Ptr<ClFacade> facade)
 	{
 		int2 res (1036,777);
-		//m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
+		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
 		m_vecUT.pushBack(new UThorizonLiftingAsync(facade, res));
-		//m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
+		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
 	}
 	int getPerformsCount()
 	{
-		return 4000;
+		return 100;
 	}
 	string getName()
 	{
@@ -270,13 +271,13 @@ class TestHorizonAsyncConvolutionThreadCopy: public Test
 	void init(Ptr<ClFacade> facade)
 	{
 		int2 res (1036,777);
-		//m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
+		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
 		m_vecUT.pushBack(new UThorizonConvolutionAsync(facade, res));
-		//m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
+		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
 	}
 	int getPerformsCount()
 	{
-		return 4000;
+		return 100;
 	}
 	string getName()
 	{
@@ -289,17 +290,55 @@ class TestHorizonAsyncConvolutionThreadCopyOpt: public Test
 	void init(Ptr<ClFacade> facade)
 	{
 		int2 res (1036,777);
-		//m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
+		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
 		m_vecUT.pushBack(new UThorizonConvolutionAsyncOpt(facade, res));
-		//m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
+		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
 	}
 	int getPerformsCount()
 	{
-		return 4000;
+		return 100;
 	}
 	string getName()
 	{
 		return "Optimized asynchronous convolution with thread copy";
+	}
+};
+
+class TestHorizonAsyncConvolutionThreadCopy2Lines: public Test
+{
+	void init(Ptr<ClFacade> facade)
+	{
+		int2 res (1036,777);
+		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
+		m_vecUT.pushBack(new UThorizonConvolutionAsyncOpt2Lines(facade, res));
+		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
+	}
+	int getPerformsCount()
+	{
+		return 100;
+	}
+	string getName()
+	{
+		return "Optimized asynchronous convolution with thread copy per 2 lines";
+	}
+};
+
+class TestHorizonAsyncConvolutionThreadCopy4Lines: public Test
+{
+	void init(Ptr<ClFacade> facade)
+	{
+		int2 res (1036,777);
+		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
+		m_vecUT.pushBack(new UThorizonConvolutionAsyncOpt4Lines(facade, res));
+		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
+	}
+	int getPerformsCount()
+	{
+		return 100;
+	}
+	string getName()
+	{
+		return "Optimized asynchronous convolution with thread copy per 4 lines";
 	}
 };
 
@@ -308,13 +347,13 @@ class TestTransposeInsideTiles: public Test
 	void init(Ptr<ClFacade> facade)
 	{
 		int2 res (1036,777);
-		//m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
+		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
 		m_vecUT.pushBack(new UTtransposeInsideTiles(facade));
-		//m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
+		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
 	}
 	int getPerformsCount()
 	{
-		return 1000;
+		return 100;
 	}
 	string getName()
 	{
@@ -322,18 +361,57 @@ class TestTransposeInsideTiles: public Test
 	}
 };
 
+class TestTransposeInsideTiles2: public Test
+{
+	void init(Ptr<ClFacade> facade)
+	{
+		int2 res (1036,777);
+		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
+		m_vecUT.pushBack(new UTtransposeInsideTiles2(facade));
+		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
+	}
+	int getPerformsCount()
+	{
+		return 100;
+	}
+	string getName()
+	{
+		return "Transpose inplace tiles optimizied";
+	}
+};
+
+class TestTransposeNaive: public Test
+{
+	void init(Ptr<ClFacade> facade)
+	{
+		int2 res (1036,777);
+		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
+		m_vecUT.pushBack(new UTtransposeNaive(facade));
+		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
+	}
+	int getPerformsCount()
+	{
+		return 100;
+	}
+	string getName()
+	{
+		return "Transpose naive";
+	}
+};
+
+
 class TestTranspose: public Test
 {
 	void init(Ptr<ClFacade> facade)
 	{
 		int2 res (1036,777);
-		//m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
+		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
 		m_vecUT.pushBack(new UTtranspose(facade));
-		//m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
+		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
 	}
 	int getPerformsCount()
 	{
-		return 1000;
+		return 100;
 	}
 	string getName()
 	{
@@ -341,25 +419,6 @@ class TestTranspose: public Test
 	}
 };
 
-
-//class TestHorizonAsyncConvolutionThreadCopyOpt4Lines: public Test
-//{
-//	void init(Ptr<ClFacade> facade)
-//	{
-//		int2 res (1036,777);
-//		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
-//		m_vecUT.pushBack(new UThorizonConvolutionAsyncOpt4Lines(facade, res));
-//		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
-//	}
-//	int getPerformsCount()
-//	{
-//		return 1000;
-//	}
-//	string getName()
-//	{
-//		return "Optimized asynchronous convolution with thread copy";
-//	}
-//};
 
 class TestCopyGlobalLocalGlobal: public Test
 {
@@ -381,11 +440,81 @@ class TestCopyGlobalLocalGlobal: public Test
 	}
 };
 
+class TestVerticalPerformTransHorizonTrans: public Test
+{
+	void init(Ptr<ClFacade> facade)
+	{
+		int2 res (1036,777);
+		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
+		m_vecUT.pushBack(new UTtransposeInsideTiles(facade));
+		m_vecUT.pushBack(new UThorizonConvolutionAsyncOpt2Lines(facade, res));
+		m_vecUT.pushBack(new UTtransposeInsideTiles(facade));
+		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
+	}
+	int getPerformsCount()
+	{
+		return 100;
+	}
+	string getName()
+	{
+		return "Vertical wavelet transformation - consists of transposing, horizon, transposing";
+	}
+};
+
+class TestVerticalNaive: public Test
+{
+	void init(Ptr<ClFacade> facade)
+	{
+		int2 res (1036,777);
+		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
+		m_vecUT.pushBack(new UTverticalNaive(facade, res));
+		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
+	}
+	int getPerformsCount()
+	{
+		return 100;
+	}
+	string getName()
+	{
+		return "Vertical wavelet transformation - naive";
+	}
+};
+
+class TestVerticalOverlapping: public Test
+{
+	void init(Ptr<ClFacade> facade)
+	{
+		int2 res (1036,777);
+		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
+		m_vecUT.pushBack(new UTverticalOverlappingUpperPart(facade, res));
+		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
+	}
+	int getPerformsCount()
+	{
+		return 100;
+	}
+	string getName()
+	{
+		return "Vertical wavelet transformation - overlapping";
+	}
+};
 
 void performTests(Ptr<ClFacade> facade)
 {
+	//Vector<int2> vecResolutions;
+	//int2 minRes (64, 64);
+	//int2 maxRes (4096, 4096);
+
+	//vecResolutions.pushBack(minRes);
+	//vecResolutions.pushBack(int2(128,128));
+	//vecResolutions.pushBack(int2(256,256));
+	//vecResolutions.pushBack(int2(512,512));
+	//vecResolutions.pushBack(int2(1024,1024));
+	//vecResolutions.pushBack(int2(2048,2048));
+	//vecResolutions.pushBack(int2(4096,4096));
+
 	Vector<Ptr<Test>> tests;
-	int saveOutput = -1;
+	int saveOutput = 1;
 	tests.pushBack(new TestIO);
 	//tests.pushBack(new TestIO2);
 	//tests.pushBack(new TestIO3);
@@ -396,26 +525,28 @@ void performTests(Ptr<ClFacade> facade)
 	//tests.pushBack(new TestMemoryUsingLocal);
 	//tests.pushBack(new TestMemoryUsingPrivate);
 
-	//tests.pushBack(new TestHorizonSyncLiftingThreadCopy);
-	//tests.pushBack(new TestHorizonAsyncLiftingThreadCopy);
+	tests.pushBack(new TestHorizonSyncLiftingThreadCopy);
+	tests.pushBack(new TestHorizonAsyncLiftingThreadCopy);
 
+	//tests.pushBack(new TestTransposeInsideTiles);
+	//tests.pushBack(new TestTransposeInsideTiles2);
+	//tests.pushBack(new TestTransposeNaive);
+	//tests.pushBack(new TestTranspose);
+	//
 	//tests.pushBack(new TestHorizonSyncLiftingAsyncCopy);
 	//tests.pushBack(new TestHorizonSyncLiftingThreadCopy);
 	//tests.pushBack(new TestHorizonSyncLiftingThreadCopyMoreThreads);
 	//tests.pushBack(new TestHorizonAsyncLiftingThreadCopy);
 	//tests.pushBack(new TestHorizonAsyncConvolutionThreadCopy);
 	//tests.pushBack(new TestHorizonAsyncConvolutionThreadCopyOpt);
-	//tests.pushBack(new TestHorizonAsyncConvolutionThreadCopyMultiLine);
+	//tests.pushBack(new TestHorizonAsyncConvolutionThreadCopy2Lines);
+	//tests.pushBack(new TestHorizonAsyncConvolutionThreadCopy4Lines);
+	//
+	//tests.pushBack(new TestVerticalPerformTransHorizonTrans);
+	//tests.pushBack(new TestVerticalNaive);
+	//tests.pushBack(new TestVerticalOverlapping);
 
-
-	tests.pushBack(new TestTransposeInsideTiles);
-/*	tests.pushBack(new TestTranspose);
-	tests.pushBack(new TestIO);
-	tests.pushBack(new TestHorizonSyncLiftingThreadCopyMoreThreads);
-	//tests.pushBack(new TestHorizonSyncLiftingAsyncCopy);
-	tests.pushBack(new TestHorizonAsyncConvolutionThreadCopy);
-	tests.pushBack(new TestHorizonAsyncConvolutionThreadCopyOpt);
-*/	for (int i = 0; i < tests.getSize(); i++)
+	for (int i = 0; i < tests.getSize(); i++)
 	{
 		Ptr<Test> test = tests[i];
 		test->init(facade);
@@ -430,11 +561,23 @@ void performTests(Ptr<ClFacade> facade)
 		{
 			test->perform();
 		}
-		queue->finish();
+		try {
+			queue->finish();
+		} catchCLError;
 		end = GetTickCount();
-		if (saveOutput == i)
+		//if (/*saveOutput == i*/true)
+		//{
+		//	std::stringstream ss;
+		//	ss << "out." << int2str(i) << "dlm";
+		//	Ptr<UTsaveBufferToDLM> ut = new UTsaveBufferToDLM(facade, ss.str());
+		//	std::cout << " Saving output...";
+		//	ut->process();
+		//}
+		if (/*saveOutput == i*/true)
 		{
-			Ptr<UTsaveBufferToDLM> ut = new UTsaveBufferToDLM(facade, "out.dlm");
+			std::stringstream ss;
+			ss << "out" << int2str(i) << ".dlm";
+			Ptr<UTsaveBufferToDLM> ut = new UTsaveBufferToDLM(facade, ss.str());
 			std::cout << " Saving output...";
 			ut->process();
 		}
