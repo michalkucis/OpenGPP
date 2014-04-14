@@ -8,9 +8,8 @@
 #include <ImathBox.h>
 #include <windows.h>
 
-#include "util.h"
-#include "userTransformations.h"
-#include "test.h"
+#include "Tests.h"
+#include "UserTransformations.h"
 
 
 class Window

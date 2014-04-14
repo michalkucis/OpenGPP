@@ -92,12 +92,24 @@
     <None Include="..\Data\kernels\wperfCDF97User.cl">
       <FileType>Document</FileType>
     </None>
+    <None Include="..\Data\kernels\wperfCDF97UserFinal.cl" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="performanceTests.h" />
-    <ClInclude Include="test.h" />
-    <ClInclude Include="userTransformations.h" />
-    <ClInclude Include="util.h" />
+    <ClInclude Include="oldTests.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="oldUserTransformations.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="Tests.h" />
+    <ClInclude Include="oldTestsTranspose.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="UserTransformations.h" />
+    <ClInclude Include="oldUtil.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="Util.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

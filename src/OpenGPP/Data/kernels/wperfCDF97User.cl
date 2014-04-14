@@ -22,24 +22,6 @@ __kernel void copyGlobalLocalGlobal(
 	__constant StructConstMemory* constMemory,
 	__local float* localMemory)
 {
-	//int2 myID = {get_global_id(0), get_global_id(1)};
-	//// load elements:
-	//localMemory[myID.x] = in[myID.x + constMemory->bufferStride*myID.y];
-	//localMemory[myID.x+get_global_size(0)] = in[myID.x+get_global_size(0) + constMemory->bufferStride*myID.y];
-	//barrier(CLK_LOCAL_MEM_FENCE);
-	//
-	//// init variables:
-	//__local float* arr = localMemory;
-	//int stride = constMemory->bufferStride;
-	//int half = constMemory->halfResolution.x;
-	//int resX = constMemory->resolution.x;
-	//int resY = constMemory->resolution.y;
-	//int nd1 = myID.x * 2;
-	//int nd2 = nd1 + 1 >= resX ? nd1 - 1 : nd1 + 1;
-
-	//out[myID.x + constMemory->bufferStride*myID.y] = arr[nd1];
-	//out[myID.x+half + constMemory->bufferStride*myID.y] = arr[nd2];
-
 	int offsetLocalIn1 = get_local_id(0)*2 + get_local_size(0)*get_local_id(1);
 	int offsetLocalIn2 = get_local_id(0)*2+1 + get_local_size(0)*get_local_id(1);
 	int offsetLocalOut1 = get_local_id(0) + get_local_size(0)*get_local_id(1);
@@ -527,6 +509,7 @@ __kernel void horizonLiftingAsync(
 	else if (myID.x >= get_global_size(0)-4 && myID.x < get_global_size(0)-1)
 		localMemory[constMemory->resolution.x + myID.x-4] = localMemory[constMemory->resolution.x - myID.x + 3];
 	barrier(CLK_LOCAL_MEM_FENCE);
+
 
 	// init variables:
 	__local float* arr = localMemory;

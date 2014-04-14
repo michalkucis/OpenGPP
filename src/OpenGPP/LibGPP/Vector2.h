@@ -214,6 +214,16 @@ public:
 		x = v2.x;
 		y = v2.y;
 	}
+
+	bool operator== (int2 v)
+	{
+		return x==v.x && y==v.y;
+	}
+
+	bool operator!= (int2 v)
+	{
+		return x!=v.x || y!=v.y;
+	}
 };
 
 class uint2: public Vector2<uint>
