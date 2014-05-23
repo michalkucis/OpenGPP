@@ -642,7 +642,7 @@ public:
 class UThorizonConvolutionAsync4: public UserTransformation
 {
 	cl::Kernel m_kernel;
-	cl::Kernel m_kernelWide;
+	cl::Kernel m_kernelWide1, m_kernelWide2;
 	int2 m_resolution;
 	Ptr<ClFacade> m_facade;
 public:
@@ -651,7 +651,9 @@ public:
 	  {
 		  m_facade = facade;
 		  m_kernel = createKernel(*m_facade->getContext(), "kernels\\wperfCDF97UserFinal.cl", "horizonConvolutionAsync4");
-		  m_kernelWide = createKernel(*m_facade->getContext(), "kernels\\wperfCDF97UserFinal.cl", "horizonConvolutionAsyncWide4");
+		  m_kernelWide1 = createKernel(*m_facade->getContext(), "kernels\\wperfCDF97UserFinal.cl", "horizonConvolutionAsync4WideFirst");
+		  m_kernelWide2 = createKernel(*m_facade->getContext(), "kernels\\wperfCDF97UserFinal.cl", "horizonConvolutionAsync4WideSecond");
+
 	  }
 	  int getOptCountWorkItems(int size)
 	  {
@@ -693,21 +695,40 @@ public:
 		  {			
 			  try 
 			  {
-				  Ptr<ClBuffer2D> bufferIn = m_facade->getActiveBuffer();
-				  m_kernelWide.setArg(0, m_facade->getActiveBuffer()->getClBuffer());
-				  Ptr<ClBuffer2D> bufferResult = m_facade->getUnusedBuffer();
-				  m_kernelWide.setArg(1, bufferResult->getClBuffer());
-				  m_facade->setActiveBuffer(bufferResult);
+				  {
+					  Ptr<ClBuffer2D> bufferIn = m_facade->getActiveBuffer();
+					  m_kernelWide1.setArg(0, m_facade->getActiveBuffer()->getClBuffer());
+					  Ptr<ClBuffer2D> bufferResult = m_facade->getUnusedBuffer();
+					  m_kernelWide1.setArg(1, bufferResult->getClBuffer());
 
+					  int numWorkItemWidth = m_resolution.x/((m_resolution.x/2048) + (m_resolution.x%2048?1:0))/2;
+					  int2 numWorkItems(numWorkItemWidth, 1);
+					  int2 numGlobalItems(numWorkItemWidth, m_resolution.y/4);
+					  cl::Buffer bufferConstMemory = initConstMemory(bufferResult->getStride(), bufferResult->getSize());
+					  m_kernelWide1.setArg(2, bufferConstMemory);
+					  m_kernelWide1.setArg(3, sizeof(cl_float) * getRequiredLocalMomeryItems(m_resolution.x), NULL);
+					  m_kernelWide1.setArg(4, m_resolution.x/numWorkItemWidth/2);
+					  getQueue()->enqueueNDRangeKernel(m_kernelWide1, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
+				  }
 
-				  int numWorkItemWidth = m_resolution.x/((m_resolution.x/2048) + (m_resolution.x%2048?1:0))/2;
-				  int2 numWorkItems(numWorkItemWidth, 1);
-				  int2 numGlobalItems(numWorkItemWidth, m_resolution.y/4);
-				  cl::Buffer bufferConstMemory = initConstMemory(bufferResult->getStride(), bufferResult->getSize());
-				  m_kernelWide.setArg(2, bufferConstMemory);
-				  m_kernelWide.setArg(3, sizeof(cl_float) * getRequiredLocalMomeryItems(m_resolution.x), NULL);
-				  m_kernelWide.setArg(4, m_resolution.x/numWorkItemWidth/2);
-				  getQueue()->enqueueNDRangeKernel(m_kernelWide, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
+				  {
+					  Ptr<ClBuffer2D> bufferIn = m_facade->getActiveBuffer();
+					  m_kernelWide2.setArg(0, m_facade->getActiveBuffer()->getClBuffer());
+					  Ptr<ClBuffer2D> bufferResult = m_facade->getUnusedBuffer();
+					  m_kernelWide2.setArg(1, bufferResult->getClBuffer());
+	
+					  int numWorkItemWidth = m_resolution.x/((m_resolution.x/2048) + (m_resolution.x%2048?1:0))/2;
+					  int2 numWorkItems(numWorkItemWidth, 1);
+					  int2 numGlobalItems(numWorkItemWidth, m_resolution.y/4);
+					  cl::Buffer bufferConstMemory = initConstMemory(bufferResult->getStride(), bufferResult->getSize());
+					  m_kernelWide2.setArg(2, bufferConstMemory);
+					  m_kernelWide2.setArg(3, sizeof(cl_float) * getRequiredLocalMomeryItems(m_resolution.x), NULL);
+					  m_kernelWide2.setArg(4, m_resolution.x/numWorkItemWidth/2);
+					  getQueue()->enqueueNDRangeKernel(m_kernelWide2, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
+
+					  m_facade->setActiveBuffer(bufferResult);
+
+				  }
 			  } catchCLError;
 		  }
 	  }
@@ -908,6 +929,90 @@ public:
 };
 
 
+class UTverticalOverlappedTiles2Rows: public UserTransformation
+{
+	cl::Kernel m_kernel;
+	int2 m_resolution;
+	Ptr<ClFacade> m_facade;
+public:
+	UTverticalOverlappedTiles2Rows(Ptr<ClFacade> facade):
+	  UserTransformation(facade)
+	  {
+		  m_facade = facade;
+		  m_kernel = createKernel(*m_facade->getContext(), "kernels\\wperfCDF97UserFinal.cl", "verticalOverlappedTiles2Rows");
+	  }
+	  int getRequiredLocalMomeryItems(int2 size)
+	  {
+		  return size.getArea()*2 + 32*8;
+	  }
+	  void prepare(int2 resolution)
+	  {
+		  m_resolution = resolution;
+	  }
+	  void process()
+	  {
+		  try 
+		  {
+			  Ptr<ClBuffer2D> bufferIn = m_facade->getActiveBuffer();
+			  m_kernel.setArg(0, m_facade->getActiveBuffer()->getClBuffer());
+			  Ptr<ClBuffer2D> bufferResult = m_facade->getUnusedBuffer();
+			  m_kernel.setArg(1, bufferResult->getClBuffer());
+
+			  m_facade->setActiveBuffer(bufferResult);
+
+			  int2 numWorkItems(32, 32);
+			  int2 numGlobalItems(m_resolution.x/2, m_resolution.y/2);
+			  cl::Buffer bufferConstMemory = initConstMemory(bufferResult->getStride()/2, int2(bufferResult->getSize().x/2, bufferResult->getSize().y));
+			  m_kernel.setArg(2, bufferConstMemory);
+			  //initKernelConstMemory(resLvl);
+			  m_kernel.setArg(3, 2 * sizeof(cl_float) * getRequiredLocalMomeryItems(numWorkItems), NULL);
+			  getQueue()->enqueueNDRangeKernel(m_kernel, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
+		  } catchCLError;
+	  }
+};
+
+
+class UTverticalOverlappedTiles4Rows: public UserTransformation
+{
+	cl::Kernel m_kernel;
+	int2 m_resolution;
+	Ptr<ClFacade> m_facade;
+public:
+	UTverticalOverlappedTiles4Rows(Ptr<ClFacade> facade):
+	  UserTransformation(facade)
+	  {
+		  m_facade = facade;
+		  m_kernel = createKernel(*m_facade->getContext(), "kernels\\wperfCDF97UserFinal.cl", "verticalOverlappedTiles4Rows");
+	  }
+	  int getRequiredLocalMomeryItems(int2 size)
+	  {
+		  return size.getArea()*2 + 32*8;
+	  }
+	  void prepare(int2 resolution)
+	  {
+		  m_resolution = resolution;
+	  }
+	  void process()
+	  {
+		  try 
+		  {
+			  Ptr<ClBuffer2D> bufferIn = m_facade->getActiveBuffer();
+			  m_kernel.setArg(0, m_facade->getActiveBuffer()->getClBuffer());
+			  Ptr<ClBuffer2D> bufferResult = m_facade->getUnusedBuffer();
+			  m_kernel.setArg(1, bufferResult->getClBuffer());
+
+			  m_facade->setActiveBuffer(bufferResult);
+
+			  int2 numWorkItems(16, 32);
+			  int2 numGlobalItems(m_resolution.x/4, m_resolution.y/2);
+			  cl::Buffer bufferConstMemory = initConstMemory(bufferResult->getStride()/4, int2(bufferResult->getSize().x/2, bufferResult->getSize().y));
+			  m_kernel.setArg(2, bufferConstMemory);
+			  //initKernelConstMemory(resLvl);
+			  m_kernel.setArg(3, 4 * sizeof(cl_float) * getRequiredLocalMomeryItems(numWorkItems), NULL);
+			  getQueue()->enqueueNDRangeKernel(m_kernel, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
+		  } catchCLError;
+	  }
+};
 
 
 class UTverticalSlidingWindow: public UserTransformation
@@ -924,7 +1029,7 @@ public:
 	}
 	int getRequiredLocalMomeryItems(int2 size)
 	{
-		return size.getArea()*2*2;
+		return size.getArea()*4;
 	}
 	void prepare(int2 resolution)
 	{
@@ -943,16 +1048,306 @@ public:
 
 			int2 numWorkItems(32, 32);
 			int2 numGlobalItems(m_resolution.x, 32);
+			//int2 numGlobalItems(32, 32);
 			cl::Buffer bufferConstMemory = initConstMemory(bufferResult->getStride(), bufferResult->getSize());
 			m_kernel.setArg(2, bufferConstMemory);
 			//initKernelConstMemory(resLvl);
 			m_kernel.setArg(3, sizeof(cl_float) * getRequiredLocalMomeryItems(numWorkItems), NULL);
+			m_kernel.setArg(4, (m_resolution.y / 64) - 1);
 			getQueue()->enqueueNDRangeKernel(m_kernel, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
 		} catchCLError;
 	}
 };
 
 
+class UTverticalSlidingWindow2Columns: public UserTransformation
+{
+	cl::Kernel m_kernel;
+	int2 m_resolution;
+	Ptr<ClFacade> m_facade;
+public:
+	UTverticalSlidingWindow2Columns(Ptr<ClFacade> facade):
+	  UserTransformation(facade)
+	  {
+		  m_facade = facade;
+		  m_kernel = createKernel(*m_facade->getContext(), "kernels\\wperfCDF97UserFinal.cl", "verticalSlidingWindow2Columns");
+	  }
+	  int getRequiredLocalMomeryItems(int2 size)
+	  {
+		  return size.getArea()*2*2;
+	  }
+	  void prepare(int2 resolution)
+	  {
+		  m_resolution = resolution;
+	  }
+	  void process()
+	  {
+		  try 
+		  {
+			  Ptr<ClBuffer2D> bufferIn = m_facade->getActiveBuffer();
+			  m_kernel.setArg(0, m_facade->getActiveBuffer()->getClBuffer());
+			  Ptr<ClBuffer2D> bufferResult = m_facade->getUnusedBuffer();
+			  m_kernel.setArg(1, bufferResult->getClBuffer());
+
+			  m_facade->setActiveBuffer(bufferResult);
+
+			  int2 numWorkItems(32, 32);
+			  int2 numGlobalItems(m_resolution.x/2, 32);
+			  cl::Buffer bufferConstMemory = initConstMemory(bufferResult->getStride()/2, int2(bufferResult->getSize().x/2,bufferResult->getSize().y));
+			  m_kernel.setArg(2, bufferConstMemory);
+			  //initKernelConstMemory(resLvl);
+			  m_kernel.setArg(3, 2*sizeof(cl_float) * getRequiredLocalMomeryItems(numWorkItems), NULL);
+				m_kernel.setArg(4, (m_resolution.y / 64) - 1);
+				getQueue()->enqueueNDRangeKernel(m_kernel, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
+		  } catchCLError;
+	  }
+};
+
+
+
+class UTverticalSlidingWindow4Columns: public UserTransformation
+{
+	cl::Kernel m_kernel;
+	int2 m_resolution;
+	Ptr<ClFacade> m_facade;
+public:
+	UTverticalSlidingWindow4Columns(Ptr<ClFacade> facade):
+	  UserTransformation(facade)
+	  {
+		  m_facade = facade;
+		  m_kernel = createKernel(*m_facade->getContext(), "kernels\\wperfCDF97UserFinal.cl", "verticalSlidingWindow4Columns");
+	  }
+	  int getRequiredLocalMomeryItems(int2 size)
+	  {
+		  return size.getArea()*4*2;
+	  }
+	  void prepare(int2 resolution)
+	  {
+		  m_resolution = resolution;
+	  }
+	  void process()
+	  {
+		  try 
+		  {
+			  Ptr<ClBuffer2D> bufferIn = m_facade->getActiveBuffer();
+			  m_kernel.setArg(0, m_facade->getActiveBuffer()->getClBuffer());
+			  Ptr<ClBuffer2D> bufferResult = m_facade->getUnusedBuffer();
+			  m_kernel.setArg(1, bufferResult->getClBuffer());
+
+			  m_facade->setActiveBuffer(bufferResult);
+
+			  int2 numWorkItems(32, 16);
+			  int2 numGlobalItems(m_resolution.x/4, 16);
+			  cl::Buffer bufferConstMemory = initConstMemory(bufferResult->getStride()/4, int2(bufferResult->getSize().x/4,bufferResult->getSize().y));
+			  m_kernel.setArg(2, bufferConstMemory);
+			  //initKernelConstMemory(resLvl);
+			  m_kernel.setArg(3, 2*sizeof(cl_float) * getRequiredLocalMomeryItems(numWorkItems), NULL);
+			  m_kernel.setArg(4, (m_resolution.y / 32) - 1);
+			  getQueue()->enqueueNDRangeKernel(m_kernel, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
+		  } catchCLError;
+	  }
+};
+
+
+
+class UTvertStripsSync: public UserTransformation
+{
+	cl::Kernel m_kernel;
+	int2 m_resolution;
+	Ptr<ClFacade> m_facade;
+public:
+	UTvertStripsSync(Ptr<ClFacade> facade):
+	  UserTransformation(facade)
+	  {
+		  m_facade = facade;
+		  m_kernel = createKernel(*m_facade->getContext(), "kernels\\wperfCDF97Vert.cl", "cdf97VertTwoSync");
+	  }
+	  int getRequiredLocalMomeryItems(int2 size)
+	  {
+		  return size.getArea()*3;
+	  }
+	  void prepare(int2 resolution)
+	  {
+		  m_resolution = resolution;
+	  }
+	  void process()
+	  {
+		  try 
+		  {
+			  Ptr<ClBuffer2D> bufferIn = m_facade->getActiveBuffer();
+			  m_kernel.setArg(0, m_facade->getActiveBuffer()->getClBuffer());
+
+			  m_kernel.setArg(1, 256*sizeof(float)*3, NULL);
+			  int2 numWorkItems(32, 8);
+			  int2 numGlobalItems(m_resolution.x, 8);
+
+			  m_kernel.setArg(2, m_resolution.y/(numWorkItems.y*2)-1);
+			  m_kernel.setArg(3, bufferIn->getStride());
+
+			  getQueue()->enqueueNDRangeKernel(m_kernel, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
+		  } catchCLError;
+	  }
+};
+
+
+class UTvertStrips: public UserTransformation
+{
+	cl::Kernel m_kernel;
+	int2 m_resolution;
+	Ptr<ClFacade> m_facade;
+public:
+	UTvertStrips(Ptr<ClFacade> facade):
+	  UserTransformation(facade)
+	  {
+		  m_facade = facade;
+		  m_kernel = createKernel(*m_facade->getContext(), "kernels\\wperfCDF97Vert.cl", "cdf97VertTwo");
+	  }
+	  int getRequiredLocalMomeryItems(int2 size)
+	  {
+		  return size.getArea()*3;
+	  }
+	  void prepare(int2 resolution)
+	  {
+		  m_resolution = resolution;
+	  }
+	  void process()
+	  {
+		  try 
+		  {
+			  Ptr<ClBuffer2D> bufferIn = m_facade->getActiveBuffer();
+			  m_kernel.setArg(0, m_facade->getActiveBuffer()->getClBuffer());
+
+			  m_kernel.setArg(1, 256*sizeof(float)*3, NULL);
+			  int2 numWorkItems(32, 8);
+			  int2 numGlobalItems(m_resolution.x, 8);
+
+			  m_kernel.setArg(2, m_resolution.y/(numWorkItems.y*2)-1);
+			  m_kernel.setArg(3, bufferIn->getStride());
+
+			  getQueue()->enqueueNDRangeKernel(m_kernel, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
+		  } catchCLError;
+	  }
+};
+
+
+class UTvertStrips4Coef: public UserTransformation
+{
+	cl::Kernel m_kernel;
+	int2 m_resolution;
+	Ptr<ClFacade> m_facade;
+public:
+	UTvertStrips4Coef(Ptr<ClFacade> facade):
+	  UserTransformation(facade)
+	  {
+		  m_facade = facade;
+		  m_kernel = createKernel(*m_facade->getContext(), "kernels\\wperfCDF97Vert.cl", "cdf97VertTwo4Coef");
+	  }
+	  int getRequiredLocalMomeryItems(int2 size)
+	  {
+		  return size.getArea()*3;
+	  }
+	  void prepare(int2 resolution)
+	  {
+		  m_resolution = resolution;
+	  }
+	  void process()
+	  {
+		  try 
+		  {
+			  Ptr<ClBuffer2D> bufferIn = m_facade->getActiveBuffer();
+			  m_kernel.setArg(0, m_facade->getActiveBuffer()->getClBuffer());
+
+			  m_kernel.setArg(1, 256*sizeof(float)*5, NULL);
+			  int2 numWorkItems(32, 8);
+			  int2 numGlobalItems(m_resolution.x, 8);
+
+			  m_kernel.setArg(2, m_resolution.y/(numWorkItems.y*4)-1);
+			  m_kernel.setArg(3, bufferIn->getStride());
+
+			  getQueue()->enqueueNDRangeKernel(m_kernel, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
+		  } catchCLError;
+	  }
+};
+
+
+class UTvertStrips8Coef: public UserTransformation
+{
+	cl::Kernel m_kernel;
+	int2 m_resolution;
+	Ptr<ClFacade> m_facade;
+public:
+	UTvertStrips8Coef(Ptr<ClFacade> facade):
+	  UserTransformation(facade)
+	  {
+		  m_facade = facade;
+		  m_kernel = createKernel(*m_facade->getContext(), "kernels\\wperfCDF97Vert.cl", "cdf97VertTwo8Coef");
+	  }
+	  int getRequiredLocalMomeryItems(int2 size)
+	  {
+		  return size.getArea()*3;
+	  }
+	  void prepare(int2 resolution)
+	  {
+		  m_resolution = resolution;
+	  }
+	  void process()
+	  {
+		  try 
+		  {
+			  Ptr<ClBuffer2D> bufferIn = m_facade->getActiveBuffer();
+			  m_kernel.setArg(0, m_facade->getActiveBuffer()->getClBuffer());
+
+			  m_kernel.setArg(1, 256*sizeof(float)*9, NULL);
+			  int2 numWorkItems(32, 8);
+			  int2 numGlobalItems(m_resolution.x, 8);
+
+			  m_kernel.setArg(2, m_resolution.y/(numWorkItems.y*8)-1);
+			  m_kernel.setArg(3, bufferIn->getStride());
+
+			  getQueue()->enqueueNDRangeKernel(m_kernel, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
+		  } catchCLError;
+	  }
+};
+
+
+class UTvertStrips16Coef: public UserTransformation
+{
+	cl::Kernel m_kernel;
+	int2 m_resolution;
+	Ptr<ClFacade> m_facade;
+public:
+	UTvertStrips16Coef(Ptr<ClFacade> facade):
+	  UserTransformation(facade)
+	  {
+		  m_facade = facade;
+		  m_kernel = createKernel(*m_facade->getContext(), "kernels\\wperfCDF97Vert.cl", "cdf97VertTwo16Coef");
+	  }
+	  int getRequiredLocalMomeryItems(int2 size)
+	  {
+		  return size.getArea()*3;
+	  }
+	  void prepare(int2 resolution)
+	  {
+		  m_resolution = resolution;
+	  }
+	  void process()
+	  {
+		  try 
+		  {
+			  Ptr<ClBuffer2D> bufferIn = m_facade->getActiveBuffer();
+			  m_kernel.setArg(0, m_facade->getActiveBuffer()->getClBuffer());
+
+			  m_kernel.setArg(1, 256*sizeof(float)*17, NULL);
+			  int2 numWorkItems(32, 8);
+			  int2 numGlobalItems(m_resolution.x, 8);
+
+			  m_kernel.setArg(2, m_resolution.y/(numWorkItems.y*16)-1);
+			  m_kernel.setArg(3, bufferIn->getStride());
+
+			  getQueue()->enqueueNDRangeKernel(m_kernel, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y), cl::NDRange(numWorkItems.x, numWorkItems.y));
+		  } catchCLError;
+	  }
+};
 
 
 

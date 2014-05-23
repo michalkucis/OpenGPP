@@ -1249,6 +1249,113 @@ public:
 
 
 
+template <class EFFECT_WAVELET>
+class EffectToneMappingBasedOnWaveletsOpt: public EFFECT_WAVELET
+{
+	cl::Kernel m_kernelPrepareHDR, m_kernelPerformToneMapping, m_kernelCreateLDR;
+public:
+	EffectToneMappingBasedOnWaveletsOpt(Ptr<SharedObjectsFactory> sof, Ptr<EffectCLObjectsFactory> factory): 
+	  EFFECT_WAVELET(sof->getFactoryRGBTexture(), sof->getFactoryRedTexture(), factory)
+	  {
+		  m_kernelPrepareHDR = createKernel(*m_context, "kernels\\toneMapping.cl", "prepareHDR");
+		  m_kernelPerformToneMapping = createKernel(*m_context, "kernels\\toneMapping.cl", "performToneMapping");
+		  m_kernelCreateLDR = createKernel(*m_context, "kernels\\toneMapping.cl", "createLDR");
+	  }
+
+protected:
+	cl::Image2DGL m_imageU, m_imageV;
+	void updateImageU (int2 res)
+	{
+		cl::Image2DGL imDefault;
+		bool needInit = false;
+		if (imDefault() == m_imageU())
+			needInit = true;
+		else if (res.x != getImageResolution(m_imageU).x || res.y != getImageResolution(m_imageU).y)
+			needInit = true;
+
+		if (needInit)
+		{
+			if (imDefault() != m_imageU())
+			{
+				std::vector<cl::Memory> vecMemory;
+				vecMemory.push_back(m_imageU);
+				m_queue->enqueueReleaseGLObjects(&vecMemory);
+			}
+			GLTexture2D* tex = new GLTexture2D (res.x, res.y, GL_R32F, GL_RED);
+			m_imageU = getImage2DGL(*m_context, CL_MEM_READ_WRITE, tex);
+			std::vector<cl::Memory> vecMemory;
+			vecMemory.push_back(m_imageU);
+			m_queue->enqueueAcquireGLObjects(&vecMemory);
+		}
+	}
+
+	void updateImageV (int2 res)
+	{
+		cl::Image2DGL imDefault;
+		bool needInit = false;
+		if (imDefault() == m_imageV())
+			needInit = true;
+		else if (res.x != getImageResolution(m_imageV).x || res.y != getImageResolution(m_imageV).y)
+			needInit = true;
+
+		if (needInit)
+		{
+			if (imDefault() != m_imageV())
+			{
+				std::vector<cl::Memory> vecMemory;
+				vecMemory.push_back(m_imageV);
+				m_queue->enqueueReleaseGLObjects(&vecMemory);
+			}
+			GLTexture2D* tex = new GLTexture2D (res.x, res.y, GL_R32F, GL_RED);
+			m_imageV = getImage2DGL(*m_context, CL_MEM_READ_WRITE, tex);
+			std::vector<cl::Memory> vecMemory;
+			vecMemory.push_back(m_imageV);
+			m_queue->enqueueAcquireGLObjects(&vecMemory);
+		}
+	}
+public:
+	void performOperations(cl::Image2DGL& imageColor, cl::Image2DGL& imageResult, cl::Image2DGL imageTmp[2])
+	{	
+		ImageSwapper imSwapper (imageColor, imageTmp);
+		int2 res (imageResult.getImageInfo<CL_IMAGE_WIDTH>(), imageResult.getImageInfo<CL_IMAGE_HEIGHT>());
+		updateImagesWeight(res);
+		updateImageU(res);
+		updateImageV(res);
+		int2 numGlobalItems = res;
+
+		// rgb to log yuv
+		imSwapper.setImages(m_kernelPrepareHDR);
+		m_kernelPrepareHDR.setArg(2, m_imageU);
+		m_kernelPrepareHDR.setArg(3, m_imageV);
+		m_queue->enqueueNDRangeKernel(m_kernelPrepareHDR, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y));
+
+		// wcdf...
+		performTransformation(imSwapper, res);
+
+		// tone mapping
+		imSwapper.setImages(m_kernelPerformToneMapping);
+		m_queue->enqueueNDRangeKernel(m_kernelPerformToneMapping, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y));
+
+		// reverse wcdf
+		performReconstruction(imSwapper, res);
+
+		// log yuv to rgb
+		imSwapper.setImages(m_kernelCreateLDR, imageResult);
+		m_kernelCreateLDR.setArg(2, m_imageU);
+		m_kernelCreateLDR.setArg(3, m_imageV);
+		m_queue->enqueueNDRangeKernel(m_kernelCreateLDR, cl::NDRange (0,0), cl::NDRange(numGlobalItems.x, numGlobalItems.y));
+	}
+
+	Ptr<GLTexture2D> createTexTarget()
+	{
+		return m_factoryTexRGB->createProduct();
+	}
+};
+
+
+
+
+
 
 class ApplicationWavelets: public Application
 {
@@ -1263,8 +1370,8 @@ public:
 		uint2 resolution = uint2(1036,777);
 		m_pp = new PostProcessor(new SharedObjectsFactory(resolution));
 		m_pp->m_input = new InputLoadFromSingleFileOpenEXR("exrChangeLightIntensity\\img_light1_lamp250_pos0.exr");
-		//m_pp->m_vecEffects.pushBack(new EffectToneMappingBasedOnWavelets<EffectWCDF53>(new SharedObjectsFactory(resolution), new EffectCLObjectsFactory));
-		m_pp->m_vecEffects.pushBack(new EffectCDF97(new SharedObjectsFactory(resolution), new EffectCLObjectsFactory));
+		m_pp->m_vecEffects.pushBack(new EffectToneMappingBasedOnWavelets<EffectWCDF53>(new SharedObjectsFactory(resolution), new EffectCLObjectsFactory));
+		//m_pp->m_vecEffects.pushBack(new EffectCDF97(new SharedObjectsFactory(resolution), new EffectCLObjectsFactory));
 		m_pp->m_vecEffects.pushBack(new EffectRenderToScreen(0,0,1,1));
 		//m_pp->m_vecEffects.pushBack(new EffectCopyColorAndDepthMaps(new SharedObjectsFactory(resolution)));
 		//m_pp->m_vecEffects.pushBack(new EffectSaveToMatlabASCII("out.txt"));

@@ -90,7 +90,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Data\kernels\toneMapping.cl" />
-    <None Include="..\Data\kernels\wavelets.cl" />
     <None Include="..\Data\kernels\waveletsCool.cl" />
     <None Include="..\Data\kernels\waveletsNaive.cl" />
   </ItemGroup>

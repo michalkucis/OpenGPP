@@ -93,6 +93,7 @@
       <FileType>Document</FileType>
     </None>
     <None Include="..\Data\kernels\wperfCDF97UserFinal.cl" />
+    <None Include="..\Data\kernels\wperfCDF97Vert.cl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="oldTests.h">

@@ -588,35 +588,38 @@ __kernel void horizonConvolutionAsync4(
 }
 
 
-
-__kernel void horizonConvolutionAsyncWide4(
+__kernel void horizonConvolutionAsync4WideFirst(
 	__global read_only float* in,
 	__global write_only float* out,
 	__constant StructConstMemory* constMemory,
-	__local float4* localMemory,
-	int nParts)
+	__local float4* localMemory)
 {
 	int2 myID = {get_global_id(0), get_global_id(1)};
 	// load elements:
-	for (int i = 0; i < nParts; i++)
-	{
-		float4 l1;
-		l1.x = in[myID.x + i*get_global_size(0)*2 + constMemory->bufferStride*(get_global_id(1)*4)];
-		l1.y = in[myID.x + i*get_global_size(0)*2 + constMemory->bufferStride*(get_global_id(1)*4+1)];
-		l1.z = in[myID.x + i*get_global_size(0)*2 + constMemory->bufferStride*(get_global_id(1)*4+2)];
-		l1.w = in[myID.x + i*get_global_size(0)*2 + constMemory->bufferStride*(get_global_id(1)*4+3)];
-		localMemory[myID.x + 4 + i*get_global_size(0)*2] = l1;
-		float4 l2;
-		l2.x = in[myID.x+get_global_size(0) + i*get_global_size(0)*2 + constMemory->bufferStride*get_global_id(1)*4];
-		l2.y = in[myID.x+get_global_size(0) + i*get_global_size(0)*2 + constMemory->bufferStride*(get_global_id(1)*4+1)];
-		l2.z = in[myID.x+get_global_size(0) + i*get_global_size(0)*2 + constMemory->bufferStride*(get_global_id(1)*4+2)];
-		l2.w = in[myID.x+get_global_size(0) + i*get_global_size(0)*2 + constMemory->bufferStride*(get_global_id(1)*4+3)];
-		localMemory[myID.x + 4 + get_global_size(0) + i*get_global_size(0)*2] = l2;
+	float4 l1;
+	l1.x = in[myID.x + constMemory->bufferStride*(get_global_id(1)*4)];
+	l1.y = in[myID.x + constMemory->bufferStride*(get_global_id(1)*4+1)];
+	l1.z = in[myID.x + constMemory->bufferStride*(get_global_id(1)*4+2)];
+	l1.w = in[myID.x + constMemory->bufferStride*(get_global_id(1)*4+3)];
+	localMemory[myID.x + 4] = l1;
+	float4 l2;
+	l2.x = in[myID.x+get_global_size(0) + constMemory->bufferStride*(get_global_id(1)*4)];
+	l2.y = in[myID.x+get_global_size(0) + constMemory->bufferStride*(get_global_id(1)*4+1)];
+	l2.z = in[myID.x+get_global_size(0) + constMemory->bufferStride*(get_global_id(1)*4+2)];
+	l2.w = in[myID.x+get_global_size(0) + constMemory->bufferStride*(get_global_id(1)*4+3)];
+	localMemory[myID.x + 4 + get_global_size(0)] = l2;
 
-		if (myID.x <= 4 && myID.x >= 1 && i == 0)
-			localMemory[4 - myID.x] = l1;
-		if (myID.x >= get_global_size(0)-5 && i == nParts-1)
-			localMemory[4 + constMemory->resolution.x + get_global_size(0) - myID.x - 2] = l2;
+	if (myID.x <= 4 && myID.x >= 1)
+		localMemory[4 - myID.x] = l1;
+	if (myID.x < 4)
+	{
+		float4 l2;
+		l2.x = in[myID.x+get_global_size(0)*2 + constMemory->bufferStride*(get_global_id(1)*4)];
+		l2.y = in[myID.x+get_global_size(0)*2 + constMemory->bufferStride*(get_global_id(1)*4+1)];
+		l2.z = in[myID.x+get_global_size(0)*2 + constMemory->bufferStride*(get_global_id(1)*4+2)];
+		l2.w = in[myID.x+get_global_size(0)*2 + constMemory->bufferStride*(get_global_id(1)*4+3)];
+		
+		localMemory[4 + get_global_size(0)*2 + myID.x] = l2;
 	}
 	barrier(CLK_LOCAL_MEM_FENCE);
 
@@ -630,41 +633,200 @@ __kernel void horizonConvolutionAsyncWide4(
 
 	
 	// compute:
-	for (int i = 0; i < nParts; i++)
-	{
-		int base = myID.x*2 + i*get_global_size(0)*2;
-		float4 f1 = arr[base] * 0.026749f;
-		f1 += arr[base+1] * 0.016864f;
-		f1 += arr[base+2] * -0.078223f;
-		f1 += arr[base+3] * -0.266864f;
-		f1 += arr[base+4] * 0.602949f;
-		f1 += arr[base+5] * -0.266864f;
-		f1 += arr[base+6] * -0.078223f;
-		f1 += arr[base+7] * 0.016864f;
-		f1 += arr[base+8] * 0.026749f;
+	int base = myID.x*2;
+	float4 f1 = arr[base] * 0.026749f;
+	f1 += arr[base+1] * -0.016864f;
+	f1 += arr[base+2] * -0.078223f;
+	f1 += arr[base+3] * 0.266864f;
+	f1 += arr[base+4] * 0.602949f;
+	f1 += arr[base+5] * 0.266864f;
+	f1 += arr[base+6] * -0.078223f;
+	f1 += arr[base+7] * -0.016864f;
+	f1 += arr[base+8] * 0.026749f;
 	
-		int base2 = myID.x*2+2 + i*get_global_size(0)*2;
-		float4 f2 = arr[base2] * -0.091272f;
-		f2 += arr[base2+1] * -0.057544f;
-		f2 += arr[base2+2] * 0.591272f;
-		f2 += arr[base2+3] * 1.115087f;
-		f2 += arr[base2+4] * 0.591272f;
-		f2 += arr[base2+5] * -0.057544f;
-		f2 += arr[base2+6] * -0.091272f;
+	int base2 = myID.x*2+2;
+	float4 f2 = arr[base2] * 0.091272f;
+	f2 += arr[base2+1] * -0.057544f;
+	f2 += arr[base2+2] * -0.591272f;
+	f2 += arr[base2+3] * 1.115087f;
+	f2 += arr[base2+4] * -0.591272f;
+	f2 += arr[base2+5] * -0.057544f;
+	f2 += arr[base2+6] * 0.091272f;
 
-		// save elements:
-
-		out[myID.x + i*get_global_size(0) + constMemory->bufferStride*(myID.y*4)] = f1.x;
-		out[myID.x + i*get_global_size(0) + constMemory->bufferStride*(myID.y*4+1)] = f1.y;
-		out[myID.x + i*get_global_size(0) + constMemory->bufferStride*(myID.y*4+2)] = f1.z;
-		out[myID.x + i*get_global_size(0) + constMemory->bufferStride*(myID.y*4+3)] = f1.w;
+	// save elements:
+	out[myID.x + constMemory->bufferStride*(myID.y*4)] = f1.x;
+	out[myID.x + constMemory->bufferStride*(myID.y*4+1)] = f1.y;
+	out[myID.x + constMemory->bufferStride*(myID.y*4+2)] = f1.z;
+	out[myID.x + constMemory->bufferStride*(myID.y*4+3)] = f1.w;
 	
-		out[myID.x+half + i*get_global_size(0) + constMemory->bufferStride*(myID.y*4)] = f2.x;
-		out[myID.x+half + i*get_global_size(0) + constMemory->bufferStride*(myID.y*4+1)] = f2.y;	
-		out[myID.x+half + i*get_global_size(0) + constMemory->bufferStride*(myID.y*4+2)] = f2.z;
-		out[myID.x+half + i*get_global_size(0) + constMemory->bufferStride*(myID.y*4+3)] = f2.w;
-	}
+	out[myID.x+half + constMemory->bufferStride*(myID.y*4)] = f2.x;
+	out[myID.x+half + constMemory->bufferStride*(myID.y*4+1)] = f2.y;	
+	out[myID.x+half + constMemory->bufferStride*(myID.y*4+2)] = f2.z;
+	out[myID.x+half + constMemory->bufferStride*(myID.y*4+3)] = f2.w;
+
+	//out[myID.x*2 + constMemory->bufferStride*myID.y] = arr[myID.x*2 + 8];
+	//out[myID.x*2+1 + constMemory->bufferStride*myID.y] = arr[myID.x*2+1 + 8];
 }
+
+
+__kernel void horizonConvolutionAsync4WideSecond(
+	__global read_only float* in,
+	__global write_only float* out,
+	__constant StructConstMemory* constMemory,
+	__local float4* localMemory)
+{
+	int2 myID = {get_global_id(0), get_global_id(1)};
+	// load elements:
+	float4 l1;
+	l1.x = in[myID.x + constMemory->bufferStride*(get_global_id(1)*4)];
+	l1.y = in[myID.x + constMemory->bufferStride*(get_global_id(1)*4+1)];
+	l1.z = in[myID.x + constMemory->bufferStride*(get_global_id(1)*4+2)];
+	l1.w = in[myID.x + constMemory->bufferStride*(get_global_id(1)*4+3)];
+	localMemory[myID.x + 4] = l1;
+	float4 l2;
+	l2.x = in[myID.x+get_global_size(0) + constMemory->bufferStride*(get_global_id(1)*4)];
+	l2.y = in[myID.x+get_global_size(0) + constMemory->bufferStride*(get_global_id(1)*4+1)];
+	l2.z = in[myID.x+get_global_size(0) + constMemory->bufferStride*(get_global_id(1)*4+2)];
+	l2.w = in[myID.x+get_global_size(0) + constMemory->bufferStride*(get_global_id(1)*4+3)];
+	localMemory[myID.x + 4 + get_global_size(0)] = l2;
+
+	if (myID.x <= 4 && myID.x >= 1)
+	{
+		float4 l2;
+		l2.x = in[-myID.x+2*get_global_size(0) + constMemory->bufferStride*(get_global_id(1)*4)];
+		l2.y = in[-myID.x+2*get_global_size(0) + constMemory->bufferStride*(get_global_id(1)*4+1)];
+		l2.z = in[-myID.x+2*get_global_size(0) + constMemory->bufferStride*(get_global_id(1)*4+2)];
+		l2.w = in[-myID.x+2*get_global_size(0) + constMemory->bufferStride*(get_global_id(1)*4+3)];
+		localMemory[myID.x + 4] = l2;
+
+	}
+	if (myID.x >= get_global_size(0)-5)
+		localMemory[4 + constMemory->resolution.x + get_global_size(0) - myID.x - 2] = l2;
+	barrier(CLK_LOCAL_MEM_FENCE);
+
+
+	// init variables:
+	__local float4* arr = localMemory;
+	int stride = constMemory->bufferStride;
+	int half = constMemory->halfResolution.x;
+	int resX = constMemory->resolution.x;
+	int resY = constMemory->resolution.y;
+
+	
+	// compute:
+	int base = myID.x*2;
+	float4 f1 = arr[base] * 0.026749f;
+	f1 += arr[base+1] * -0.016864f;
+	f1 += arr[base+2] * -0.078223f;
+	f1 += arr[base+3] * 0.266864f;
+	f1 += arr[base+4] * 0.602949f;
+	f1 += arr[base+5] * 0.266864f;
+	f1 += arr[base+6] * -0.078223f;
+	f1 += arr[base+7] * -0.016864f;
+	f1 += arr[base+8] * 0.026749f;
+	
+	int base2 = myID.x*2+2;
+	float4 f2 = arr[base2] * 0.091272f;
+	f2 += arr[base2+1] * -0.057544f;
+	f2 += arr[base2+2] * -0.591272f;
+	f2 += arr[base2+3] * 1.115087f;
+	f2 += arr[base2+4] * -0.591272f;
+	f2 += arr[base2+5] * -0.057544f;
+	f2 += arr[base2+6] * 0.091272f;
+
+	// save elements:
+	out[myID.x + constMemory->bufferStride*(myID.y*4)] = f1.x;
+	out[myID.x + constMemory->bufferStride*(myID.y*4+1)] = f1.y;
+	out[myID.x + constMemory->bufferStride*(myID.y*4+2)] = f1.z;
+	out[myID.x + constMemory->bufferStride*(myID.y*4+3)] = f1.w;
+	
+	out[myID.x+half + constMemory->bufferStride*(myID.y*4)] = f2.x;
+	out[myID.x+half + constMemory->bufferStride*(myID.y*4+1)] = f2.y;	
+	out[myID.x+half + constMemory->bufferStride*(myID.y*4+2)] = f2.z;
+	out[myID.x+half + constMemory->bufferStride*(myID.y*4+3)] = f2.w;
+
+	//out[myID.x*2 + constMemory->bufferStride*myID.y] = arr[myID.x*2 + 8];
+	//out[myID.x*2+1 + constMemory->bufferStride*myID.y] = arr[myID.x*2+1 + 8];
+}
+
+
+
+//__kernel void horizonConvolutionAsyncWide4(
+//	__global read_only float* in,
+//	__global write_only float* out,
+//	__constant StructConstMemory* constMemory,
+//	__local float4* localMemory,
+//	int nParts)
+//{
+//	int2 myID = {get_global_id(0), get_global_id(1)};
+//	// load elements:
+//	for (int i = 0; i < nParts; i++)
+//	{
+//		float4 l1;
+//		l1.x = in[myID.x + i*get_global_size(0)*2 + constMemory->bufferStride*(get_global_id(1)*4)];
+//		l1.y = in[myID.x + i*get_global_size(0)*2 + constMemory->bufferStride*(get_global_id(1)*4+1)];
+//		l1.z = in[myID.x + i*get_global_size(0)*2 + constMemory->bufferStride*(get_global_id(1)*4+2)];
+//		l1.w = in[myID.x + i*get_global_size(0)*2 + constMemory->bufferStride*(get_global_id(1)*4+3)];
+//		localMemory[myID.x + 4 + i*get_global_size(0)*2] = l1;
+//		float4 l2;
+//		l2.x = in[myID.x+get_global_size(0) + i*get_global_size(0)*2 + constMemory->bufferStride*get_global_id(1)*4];
+//		l2.y = in[myID.x+get_global_size(0) + i*get_global_size(0)*2 + constMemory->bufferStride*(get_global_id(1)*4+1)];
+//		l2.z = in[myID.x+get_global_size(0) + i*get_global_size(0)*2 + constMemory->bufferStride*(get_global_id(1)*4+2)];
+//		l2.w = in[myID.x+get_global_size(0) + i*get_global_size(0)*2 + constMemory->bufferStride*(get_global_id(1)*4+3)];
+//		localMemory[myID.x + 4 + get_global_size(0) + i*get_global_size(0)*2] = l2;
+//
+//		if (myID.x <= 4 && myID.x >= 1 && i == 0)
+//			localMemory[4 - myID.x] = l1;
+//		if (myID.x >= get_global_size(0)-5 && i == nParts-1)
+//			localMemory[4 + constMemory->resolution.x + get_global_size(0) - myID.x - 2] = l2;
+//	}
+//	barrier(CLK_LOCAL_MEM_FENCE);
+//
+//
+//	// init variables:
+//	__local float4* arr = localMemory;
+//	int stride = constMemory->bufferStride;
+//	int half = constMemory->halfResolution.x;
+//	int resX = constMemory->resolution.x;
+//	int resY = constMemory->resolution.y;
+//
+//	
+//	// compute:
+//	for (int i = 0; i < nParts; i++)
+//	{
+//		int base = myID.x*2 + i*get_global_size(0)*2;
+//		float4 f1 = arr[base] * 0.026749f;
+//		f1 += arr[base+1] * 0.016864f;
+//		f1 += arr[base+2] * -0.078223f;
+//		f1 += arr[base+3] * -0.266864f;
+//		f1 += arr[base+4] * 0.602949f;
+//		f1 += arr[base+5] * -0.266864f;
+//		f1 += arr[base+6] * -0.078223f;
+//		f1 += arr[base+7] * 0.016864f;
+//		f1 += arr[base+8] * 0.026749f;
+//	
+//		int base2 = myID.x*2+2 + i*get_global_size(0)*2;
+//		float4 f2 = arr[base2] * -0.091272f;
+//		f2 += arr[base2+1] * -0.057544f;
+//		f2 += arr[base2+2] * 0.591272f;
+//		f2 += arr[base2+3] * 1.115087f;
+//		f2 += arr[base2+4] * 0.591272f;
+//		f2 += arr[base2+5] * -0.057544f;
+//		f2 += arr[base2+6] * -0.091272f;
+//
+//		// save elements:
+//
+//		out[myID.x + i*get_global_size(0) + constMemory->bufferStride*(myID.y*4)] = f1.x;
+//		out[myID.x + i*get_global_size(0) + constMemory->bufferStride*(myID.y*4+1)] = f1.y;
+//		out[myID.x + i*get_global_size(0) + constMemory->bufferStride*(myID.y*4+2)] = f1.z;
+//		out[myID.x + i*get_global_size(0) + constMemory->bufferStride*(myID.y*4+3)] = f1.w;
+//	
+//		out[myID.x+half + i*get_global_size(0) + constMemory->bufferStride*(myID.y*4)] = f2.x;
+//		out[myID.x+half + i*get_global_size(0) + constMemory->bufferStride*(myID.y*4+1)] = f2.y;	
+//		out[myID.x+half + i*get_global_size(0) + constMemory->bufferStride*(myID.y*4+2)] = f2.z;
+//		out[myID.x+half + i*get_global_size(0) + constMemory->bufferStride*(myID.y*4+3)] = f2.w;
+//	}
+//}
 
 
 
@@ -813,7 +975,7 @@ __kernel void verticalOverlappedTiles(
 	}
 	else
 	{
-		if (lid.y <= 4 && lid.y >= 1)
+		if (lid.y <= 3)
 		{
 			float l1 = in[gid.x + constMemory->bufferStride*(lid.y + get_group_id(1)*get_local_size(1)*2 - 4)];
 			localMemory[lid.y + lid.x*memBlockSize.y] = l1;
@@ -866,6 +1028,157 @@ __kernel void verticalOverlappedTiles(
 	//out[gid.x + constMemory->bufferStride*(gid.y*2+1)] = f2;
 }
 
+
+__kernel void verticalOverlappedTiles2Rows(
+	__global read_only float2* in,
+	__global write_only float2* out,
+	__constant StructConstMemory* constMemory,
+	__local float2* localMemory)
+{
+	int2 gid = {get_global_id(0), get_global_id(1)};
+	int2 lid = {get_local_id(0), get_local_id(1)};
+	int2 memBlockSize = {32, 64+8};
+	int half = constMemory->halfResolution.y;
+	// load elements:
+	float2 l1 = in[gid.x + constMemory->bufferStride*(lid.y + get_local_size(1)*get_group_id(1)*2)];
+	localMemory[lid.y + 4 + lid.x*memBlockSize.y] = l1;
+	float2 l2 = in[gid.x + constMemory->bufferStride*(lid.y + get_local_size(1)*get_group_id(1)*2 + get_local_size(1))];
+	localMemory[lid.y + 4 + get_local_size(1) + lid.x*memBlockSize.y] = l2;
+	if (get_group_id(1) == 0)
+	{
+		if (lid.y <= 4 && lid.y >= 1)
+			localMemory[4 - lid.y + lid.x*memBlockSize.y] = l1;
+	}
+	else
+	{
+		if (lid.y <= 4 && lid.y >= 1)
+		{
+			float2 l1 = in[gid.x + constMemory->bufferStride*(lid.y + get_group_id(1)*get_local_size(1)*2 - 4)];
+			localMemory[lid.y + lid.x*memBlockSize.y] = l1;
+		}
+	}
+
+	if (get_group_id(1) == get_num_groups(1)-1)
+	{
+		if (gid.y >= get_global_size(1)-5 && gid.y <= get_global_size(1)-2)
+			localMemory[4 + get_local_size(0)*3 - lid.y - 2 + lid.x*memBlockSize.y] = l2;
+	}
+	else
+	{
+		if (lid.y <= 3)
+		{
+			float2 l1 = in[gid.x + constMemory->bufferStride*(gid.y + get_local_size(1)*2)];
+			localMemory[lid.y + 4 + get_local_size(0)*2 + lid.x*memBlockSize.y] = l1;
+		}
+	}
+	barrier(CLK_LOCAL_MEM_FENCE);
+
+	__local float2* arr = localMemory;
+
+	int base = lid.y*2 + lid.x*memBlockSize.y;
+	float2 f1 = arr[base] * 0.026749f;
+	f1 += arr[base+1] * -0.016864f;
+	f1 += arr[base+2] * -0.078223f;
+	f1 += arr[base+3] * 0.266864f;
+	f1 += arr[base+4] * 0.602949f;
+	f1 += arr[base+5] * 0.266864f;
+	f1 += arr[base+6] * -0.078223f;
+	f1 += arr[base+7] * -0.016864f;
+	f1 += arr[base+8] * 0.026749f;
+
+	int base2 = lid.y*2+2 + lid.x*memBlockSize.y;
+	float2 f2 = arr[base2] * 0.091272f;
+	f2 += arr[base2+1] * -0.057544f;
+	f2 += arr[base2+2] * -0.591272f;
+	f2 += arr[base2+3] * 1.115087f;
+	f2 += arr[base2+4] * -0.591272f;
+	f2 += arr[base2+5] * -0.057544f;
+	f2 += arr[base2+6] * 0.091272f;
+
+	out[gid.x + constMemory->bufferStride*(gid.y)] = f1;
+	out[gid.x + constMemory->bufferStride*(gid.y+half)] = f2;
+
+	//float f1 = arr[lid.y*2 + 7 + lid.x*memBlockSize.y];
+	//float f2 = arr[lid.y*2 + 8 + lid.x*memBlockSize.y];
+	//out[gid.x + constMemory->bufferStride*(gid.y*2)] = f1;
+	//out[gid.x + constMemory->bufferStride*(gid.y*2+1)] = f2;
+}
+
+
+__kernel void verticalOverlappedTiles4Rows(
+	__global read_only float4* in,
+	__global write_only float4* out,
+	__constant StructConstMemory* constMemory,
+	__local float4* localMemory)
+{
+	int2 gid = {get_global_id(0), get_global_id(1)};
+	int2 lid = {get_local_id(0), get_local_id(1)};
+	int2 memBlockSize = {16, 64+8};
+	int half = constMemory->halfResolution.y;
+	// load elements:
+	float4 l1 = in[gid.x + constMemory->bufferStride*(lid.y + get_local_size(1)*get_group_id(1)*2)];
+	localMemory[lid.y + 4 + lid.x*memBlockSize.y] = l1;
+	float4 l2 = in[gid.x + constMemory->bufferStride*(lid.y + get_local_size(1)*get_group_id(1)*2 + get_local_size(1))];
+	localMemory[lid.y + 4 + get_local_size(1) + lid.x*memBlockSize.y] = l2;
+	if (get_group_id(1) == 0)
+	{
+		if (lid.y <= 4 && lid.y >= 1)
+			localMemory[4 - lid.y + lid.x*memBlockSize.y] = l1;
+	}
+	else
+	{
+		if (lid.y <= 4 && lid.y >= 1)
+		{
+			float4 l1 = in[gid.x + constMemory->bufferStride*(lid.y + get_group_id(1)*get_local_size(1)*2 - 4)];
+			localMemory[lid.y + lid.x*memBlockSize.y] = l1;
+		}
+	}
+
+	if (get_group_id(1) == get_num_groups(1)-1)
+	{
+		if (gid.y >= get_global_size(1)-5 && gid.y <= get_global_size(1)-2)
+			localMemory[4 + get_local_size(0)*3 - lid.y - 2 + lid.x*memBlockSize.y] = l2;
+	}
+	else
+	{
+		if (lid.y <= 3)
+		{
+			float4 l1 = in[gid.x + constMemory->bufferStride*(gid.y + get_local_size(1)*2)];
+			localMemory[lid.y + 4 + get_local_size(0)*2 + lid.x*memBlockSize.y] = l1;
+		}
+	}
+	barrier(CLK_LOCAL_MEM_FENCE);
+
+	__local float4* arr = localMemory;
+
+	int base = lid.y*2 + lid.x*memBlockSize.y;
+	float4 f1 = arr[base] * 0.026749f;
+	f1 += arr[base+1] * -0.016864f;
+	f1 += arr[base+2] * -0.078223f;
+	f1 += arr[base+3] * 0.266864f;
+	f1 += arr[base+4] * 0.602949f;
+	f1 += arr[base+5] * 0.266864f;
+	f1 += arr[base+6] * -0.078223f;
+	f1 += arr[base+7] * -0.016864f;
+	f1 += arr[base+8] * 0.026749f;
+
+	int base2 = lid.y*2+2 + lid.x*memBlockSize.y;
+	float4 f2 = arr[base2] * 0.091272f;
+	f2 += arr[base2+1] * -0.057544f;
+	f2 += arr[base2+2] * -0.591272f;
+	f2 += arr[base2+3] * 1.115087f;
+	f2 += arr[base2+4] * -0.591272f;
+	f2 += arr[base2+5] * -0.057544f;
+	f2 += arr[base2+6] * 0.091272f;
+
+	out[gid.x + constMemory->bufferStride*(gid.y)] = f1;
+	out[gid.x + constMemory->bufferStride*(gid.y+half)] = f2;
+
+	//float f1 = arr[lid.y*2 + 7 + lid.x*memBlockSize.y];
+	//float f2 = arr[lid.y*2 + 8 + lid.x*memBlockSize.y];
+	//out[gid.x + constMemory->bufferStride*(gid.y*2)] = f1;
+	//out[gid.x + constMemory->bufferStride*(gid.y*2+1)] = f2;
+}
 
 
 __kernel void transpose(
@@ -1075,71 +1388,35 @@ __kernel void verticalSlidingWindow(
 	__global read_only float* in,
 	__global write_only float* out,
 	__constant StructConstMemory* constMemory,
-	__local float* localMemory)
+	__local float* localMemory,
+	int nWindowPos)
 {
 	int2 gid = {get_global_id(0), get_global_id(1)};
 	int2 lid = {get_local_id(0), get_local_id(1)};
-	int2 memBlockSize = {32, 64};
 	int half = constMemory->halfResolution.y;
-	// load elements:
-	float l1 = in[gid.x + constMemory->bufferStride*(lid.y + get_local_size(1)*get_group_id(1)*2)];
-	localMemory[lid.x + lid.y*memBlockSize.x] = l1;
-	float l2 = in[gid.x + constMemory->bufferStride*(lid.y + get_local_size(1)*get_group_id(1)*2 + get_local_size(1))];
-	localMemory[lid.x + (lid.y + get_local_size(1))*memBlockSize.x] = l2;
-
-	if (lid.y <= 4 && lid.y >= 1)
-		localMemory[MASK_ADDRESS(lid.x - lid.y*memBlockSize.x)] = l1;
-	if (lid.y <= 3)
-	{
-		float l1 = in[gid.x + constMemory->bufferStride*(gid.y + get_local_size(1)*2)];
-		localMemory[lid.x + (get_local_size(1)*2 + lid.y)*memBlockSize.x] = l1;
-	}
-
-	barrier(CLK_LOCAL_MEM_FENCE);
 
 	__local float* arr = localMemory;
-
-	uint offset = memBlockSize.x;
-	uint base = lid.x + lid.y*memBlockSize.x*2 + offset*(-4);
-	float f1 = arr[MASK_ADDRESS(base)] * 0.026749f;
-	f1 += arr[MASK_ADDRESS(base+offset)] * -0.016864f;
-	f1 += arr[MASK_ADDRESS(base+offset*2)] * -0.078223f;
-	f1 += arr[MASK_ADDRESS(base+offset*3)] * 0.266864f;
-	f1 += arr[base+offset*4] * 0.602949f;
-	f1 += arr[base+offset*5] * 0.266864f;
-	f1 += arr[base+offset*6] * -0.078223f;
-	f1 += arr[base+offset*7] * -0.016864f;
-	f1 += arr[base+offset*8] * 0.026749f;
-
-	int base2 = lid.x + lid.y*memBlockSize.x*2 + offset*(-2);
-	float f2 = arr[MASK_ADDRESS(base2)] * 0.091272f;
-	f2 += arr[MASK_ADDRESS(base2+offset)] * -0.057544f;
-	f2 += arr[base2+offset*2] * -0.591272f;
-	f2 += arr[base2+offset*3] * 1.115087f;
-	f2 += arr[base2+offset*4] * -0.591272f;
-	f2 += arr[base2+offset*5] * -0.057544f;
-	f2 += arr[base2+offset*6] * 0.091272f;
-	//float f2 = arr[MASK_ADDRESS(base2+offset*3)];
-	//float f1 = arr[MASK_ADDRESS(base+offset*4)];
-	out[gid.x + constMemory->bufferStride*(gid.y)] = f1;
-	out[gid.x + constMemory->bufferStride*(gid.y+half)] = f2;
-
-
-	int nWindowPos = (constMemory->resolution.y / memBlockSize.y) - 1;
-	for (int i = 1; i < nWindowPos; i++)
+	// load elements:
 	{
-		int globalOff = (gid.x + constMemory->bufferStride*(lid.y + 4 + i*memBlockSize.y));
-		int localOff = MASK_ADDRESS(lid.x + (lid.y+4)*memBlockSize.x + i*2048); 
-		float l1 = in[globalOff];
-		//l1 = get_local_id(1);
-		localMemory[localOff] = l1;
-		float l2 = in[globalOff + constMemory->bufferStride*get_local_size(1)];
-		//l2 = get_local_id(1);
-		localMemory[MASK_ADDRESS(localOff + memBlockSize.x*get_local_size(1))] = l2;
+		int gindex = gid.x + constMemory->bufferStride*lid.y;
+		int lindex = lid.x + lid.y*get_local_size(0);
+		float l1 = in[gindex];
+		localMemory[lindex] = l1;
+		float l2 = in[gindex + constMemory->bufferStride*get_local_size(1)];
+		localMemory[lindex + get_local_size(1)*get_local_size(0)] = l2;
+
+		if (lid.y <= 4 && lid.y >= 1)
+			localMemory[MASK_ADDRESS(lid.x - lid.y*get_local_size(0))] = l1;
+		if (lid.y <= 3)
+		{
+			float l1 = in[gindex + (constMemory->bufferStride*(lid.y+get_local_size(1)*2))];
+			localMemory[lindex + get_local_size(0)*(lid.y+get_local_size(1)*2)] = l1;
+		}
 		barrier(CLK_LOCAL_MEM_FENCE);
 
-		uint offset = memBlockSize.x;
-		uint base = lid.x + lid.y*memBlockSize.x*2 + offset*(i*memBlockSize.y-4);
+
+		uint offset = get_local_size(0);
+		uint base = lid.x + lid.y*get_local_size(0)*2 + offset*(-4);
 		float f1 = arr[MASK_ADDRESS(base)] * 0.026749f;
 		f1 += arr[MASK_ADDRESS(base+offset)] * -0.016864f;
 		f1 += arr[MASK_ADDRESS(base+offset*2)] * -0.078223f;
@@ -1150,39 +1427,70 @@ __kernel void verticalSlidingWindow(
 		f1 += arr[MASK_ADDRESS(base+offset*7)] * -0.016864f;
 		f1 += arr[MASK_ADDRESS(base+offset*8)] * 0.026749f;
 
-		int base2 = lid.x + lid.y*memBlockSize.x*2 + offset*(i*memBlockSize.y+2-4);
-		float f2 = arr[MASK_ADDRESS(base2)] * 0.091272f;
-		f2 += arr[MASK_ADDRESS(base2+offset)] * -0.057544f;
-		f2 += arr[MASK_ADDRESS(base2+offset*2)] * -0.591272f;
-		f2 += arr[MASK_ADDRESS(base2+offset*3)] * 1.115087f;
-		f2 += arr[MASK_ADDRESS(base2+offset*4)] * -0.591272f;
-		f2 += arr[MASK_ADDRESS(base2+offset*5)] * -0.057544f;
-		f2 += arr[MASK_ADDRESS(base2+offset*6)] * 0.091272f;
-		//float f2 = arr[MASK_ADDRESS(base2+offset*3)];
-		//float f1 = arr[MASK_ADDRESS(base+offset*4)];
+		float f2 = arr[MASK_ADDRESS(base+offset*2)] * 0.091272f;
+		f2 += arr[MASK_ADDRESS(base+offset*3)] * -0.057544f;
+		f2 += arr[MASK_ADDRESS(base+offset*4)] * -0.591272f;
+		f2 += arr[MASK_ADDRESS(base+offset*5)] * 1.115087f;
+		f2 += arr[MASK_ADDRESS(base+offset*6)] * -0.591272f;
+		f2 += arr[MASK_ADDRESS(base+offset*7)] * -0.057544f;
+		f2 += arr[MASK_ADDRESS(base+offset*8)] * 0.091272f;
+		barrier(CLK_LOCAL_MEM_FENCE);
+		out[gindex] = f1;
+		out[gindex + constMemory->bufferStride*half] = f2;
+	}
 
+	// DEBUG:
+	for (int i = 1; i < nWindowPos; i++)
+	{
+		int globalOff = (gid.x + constMemory->bufferStride*(lid.y + 4 + i*get_local_size(1)*2));
+		int localOff = MASK_ADDRESS(lid.x + (lid.y+4)*get_local_size(0) + i*2048); 
+		float l1 = in[globalOff];
+		localMemory[localOff] = l1;
+		float l2 = in[globalOff + constMemory->bufferStride*get_local_size(1)];
+		localMemory[MASK_ADDRESS(localOff + get_local_size(0)*get_local_size(1))] = l2;
+		barrier(CLK_LOCAL_MEM_FENCE);
+
+		uint offset = get_local_size(0);
+		uint base = lid.x + lid.y*get_local_size(0)*2 + offset*(i*get_local_size(1)*2-4);
+		float f1 = arr[MASK_ADDRESS(base)] * 0.026749f;
+		f1 += arr[MASK_ADDRESS(base+offset)] * -0.016864f;
+		f1 += arr[MASK_ADDRESS(base+offset*2)] * -0.078223f;
+		f1 += arr[MASK_ADDRESS(base+offset*3)] * 0.266864f;
+		f1 += arr[MASK_ADDRESS(base+offset*4)] * 0.602949f;
+		f1 += arr[MASK_ADDRESS(base+offset*5)] * 0.266864f;
+		f1 += arr[MASK_ADDRESS(base+offset*6)] * -0.078223f;
+		f1 += arr[MASK_ADDRESS(base+offset*7)] * -0.016864f;
+		f1 += arr[MASK_ADDRESS(base+offset*8)] * 0.026749f;
+
+		float f2 = arr[MASK_ADDRESS(base+offset*2)] * 0.091272f;
+		f2 += arr[MASK_ADDRESS(base+offset*3)] * -0.057544f;
+		f2 += arr[MASK_ADDRESS(base+offset*4)] * -0.591272f;
+		f2 += arr[MASK_ADDRESS(base+offset*5)] * 1.115087f;
+		f2 += arr[MASK_ADDRESS(base+offset*6)] * -0.591272f;
+		f2 += arr[MASK_ADDRESS(base+offset*7)] * -0.057544f;
+		f2 += arr[MASK_ADDRESS(base+offset*8)] * 0.091272f;
+		barrier(CLK_LOCAL_MEM_FENCE);
 		out[gid.x + (gid.y+i*32)*constMemory->bufferStride] = f1;
 		out[gid.x + (gid.y+i*32+half)*constMemory->bufferStride] = f2;
 	}
 
 	{
 		int globalOff = (gid.x + constMemory->bufferStride*(constMemory->resolution.y - get_global_size(1)*2 + gid.y));
-		int localOff = MASK_ADDRESS(lid.x + memBlockSize.x*(constMemory->resolution.y - get_global_size(1)*2 + gid.y));
+		int localOff = MASK_ADDRESS(lid.x + get_local_size(0)*(constMemory->resolution.y - get_global_size(1)*2 + gid.y));
 		if (get_local_id(1) >= 4)
 		{	
 			float l1 = in[globalOff];
-			l1 = get_local_id(1);
 			localMemory[localOff] = l1;
 		}
 		float l2 = in[globalOff + constMemory->bufferStride*get_global_size(1)];
-		//l2 = get_local_id(1);
 		localMemory[localOff + get_local_size(0)*get_local_size(1)] = l2;
 		if (gid.y >= get_global_size(1)-5 && gid.y <= get_global_size(1)-2)
-			localMemory[MASK_ADDRESS(lid.x + memBlockSize.x*(get_local_size(1)*3 - lid.y - 2)+nWindowPos*2048)] = l2;
+			localMemory[MASK_ADDRESS(lid.x + get_local_size(0)*(get_local_size(1)*3 - lid.y - 2)+nWindowPos*2048)] = l2;
 	
 		barrier(CLK_LOCAL_MEM_FENCE);
 
-		uint base = lid.x + lid.y*memBlockSize.x*2 + offset*(nWindowPos*memBlockSize.y-4);
+		uint offset = get_local_size(0);
+		uint base = lid.x + lid.y*get_local_size(0)*2 + offset*(nWindowPos*get_local_size(1)*2-4);
 		float f1 = arr[MASK_ADDRESS(base)] * 0.026749f;
 		f1 += arr[MASK_ADDRESS(base+offset)] * -0.016864f;
 		f1 += arr[MASK_ADDRESS(base+offset*2)] * -0.078223f;
@@ -1193,19 +1501,280 @@ __kernel void verticalSlidingWindow(
 		f1 += arr[MASK_ADDRESS(base+offset*7)] * -0.016864f;
 		f1 += arr[MASK_ADDRESS(base+offset*8)] * 0.026749f;
 
-		int base2 = lid.x + lid.y*memBlockSize.x*2 + offset*(nWindowPos*memBlockSize.y+2-4);
-		float f2 = arr[MASK_ADDRESS(base2)] * 0.091272f;
-		f2 += arr[MASK_ADDRESS(base2+offset)] * -0.057544f;
-		f2 += arr[MASK_ADDRESS(base2+offset*2)] * -0.591272f;
-		f2 += arr[MASK_ADDRESS(base2+offset*3)] * 1.115087f;
-		f2 += arr[MASK_ADDRESS(base2+offset*4)] * -0.591272f;
-		f2 += arr[MASK_ADDRESS(base2+offset*5)] * -0.057544f;
-		f2 += arr[MASK_ADDRESS(base2+offset*6)] * 0.091272f;
+		float f2 = arr[MASK_ADDRESS(base+offset*2)] * 0.091272f;
+		f2 += arr[MASK_ADDRESS(base+offset*3)] * -0.057544f;
+		f2 += arr[MASK_ADDRESS(base+offset*4)] * -0.591272f;
+		f2 += arr[MASK_ADDRESS(base+offset*5)] * 1.115087f;
+		f2 += arr[MASK_ADDRESS(base+offset*6)] * -0.591272f;
+		f2 += arr[MASK_ADDRESS(base+offset*7)] * -0.057544f;
+		f2 += arr[MASK_ADDRESS(base+offset*8)] * 0.091272f;
 
-		//float f2 = arr[MASK_ADDRESS(base2+offset*3)];
-		//float f1 = arr[MASK_ADDRESS(base+offset*4)];
 		out[gid.x + constMemory->bufferStride*(gid.y+nWindowPos*32)] = f1;
 		out[gid.x + constMemory->bufferStride*(gid.y+nWindowPos*32+half)] = f2;
 	}
 }
 
+
+
+__kernel void verticalSlidingWindow2Columns(
+	__global read_only float2* in,
+	__global write_only float2* out,
+	__constant StructConstMemory* constMemory,
+	__local float2* localMemory,
+	int nWindowPos)
+{
+	const int2 gid = {get_global_id(0), get_global_id(1)};
+	const int2 lid = {get_local_id(0), get_local_id(1)};
+#define half constMemory->halfResolution.y
+
+	__local float2* arr = localMemory;
+	// load elements:
+	{
+		int gindex = gid.x + constMemory->bufferStride*lid.y;
+		int lindex = lid.x + lid.y*get_local_size(0);
+		float2 l1 = in[gindex];
+		localMemory[lindex] = l1;
+		float2 l2 = in[gindex + constMemory->bufferStride*get_local_size(1)];
+		localMemory[lindex + get_local_size(1)*get_local_size(0)] = l2;
+
+		if (lid.y <= 4 && lid.y >= 1)
+			localMemory[MASK_ADDRESS(lid.x - lid.y*get_local_size(0))] = l1;
+		if (lid.y <= 3)
+		{
+			float2 l1 = in[gindex + (constMemory->bufferStride*(lid.y+get_local_size(1)*2))];
+			localMemory[lindex + get_local_size(0)*(lid.y+get_local_size(1)*2)] = l1;
+		}
+		barrier(CLK_LOCAL_MEM_FENCE);
+
+
+		uint offset = get_local_size(0);
+		uint base = lid.x + lid.y*get_local_size(0)*2 + offset*(-4);
+		float2 f1 = arr[MASK_ADDRESS(base)] * 0.026749f;
+		f1 += arr[MASK_ADDRESS(base+offset)] * -0.016864f;
+		f1 += arr[MASK_ADDRESS(base+offset*2)] * -0.078223f;
+		f1 += arr[MASK_ADDRESS(base+offset*3)] * 0.266864f;
+		f1 += arr[MASK_ADDRESS(base+offset*4)] * 0.602949f;
+		f1 += arr[MASK_ADDRESS(base+offset*5)] * 0.266864f;
+		f1 += arr[MASK_ADDRESS(base+offset*6)] * -0.078223f;
+		f1 += arr[MASK_ADDRESS(base+offset*7)] * -0.016864f;
+		f1 += arr[MASK_ADDRESS(base+offset*8)] * 0.026749f;
+
+		float2 f2 = arr[MASK_ADDRESS(base+offset*2)] * 0.091272f;
+		f2 += arr[MASK_ADDRESS(base+offset*3)] * -0.057544f;
+		f2 += arr[MASK_ADDRESS(base+offset*4)] * -0.591272f;
+		f2 += arr[MASK_ADDRESS(base+offset*5)] * 1.115087f;
+		f2 += arr[MASK_ADDRESS(base+offset*6)] * -0.591272f;
+		f2 += arr[MASK_ADDRESS(base+offset*7)] * -0.057544f;
+		f2 += arr[MASK_ADDRESS(base+offset*8)] * 0.091272f;
+		barrier(CLK_LOCAL_MEM_FENCE);
+		out[gindex] = f1;
+		out[gindex + constMemory->bufferStride*half] = f2;
+	}
+
+	// DEBUG:
+	for (int i = 1; i < nWindowPos; i++)
+	{
+		int globalOff = (gid.x + constMemory->bufferStride*(lid.y + 4 + i*get_local_size(1)*2));
+		int localOff = MASK_ADDRESS(lid.x + (lid.y+4)*get_local_size(0) + i*2048); 
+		float2 l1 = in[globalOff];
+		localMemory[localOff] = l1;
+		float2 l2 = in[globalOff + constMemory->bufferStride*get_local_size(1)];
+		localMemory[MASK_ADDRESS(localOff + get_local_size(0)*get_local_size(1))] = l2;
+		barrier(CLK_LOCAL_MEM_FENCE);
+
+		uint offset = get_local_size(0);
+		uint base = lid.x + lid.y*get_local_size(0)*2 + offset*(i*get_local_size(1)*2-4);
+		float2 f1 = arr[MASK_ADDRESS(base)] * 0.026749f;
+		f1 += arr[MASK_ADDRESS(base+offset)] * -0.016864f;
+		f1 += arr[MASK_ADDRESS(base+offset*2)] * -0.078223f;
+		f1 += arr[MASK_ADDRESS(base+offset*3)] * 0.266864f;
+		f1 += arr[MASK_ADDRESS(base+offset*4)] * 0.602949f;
+		f1 += arr[MASK_ADDRESS(base+offset*5)] * 0.266864f;
+		f1 += arr[MASK_ADDRESS(base+offset*6)] * -0.078223f;
+		f1 += arr[MASK_ADDRESS(base+offset*7)] * -0.016864f;
+		f1 += arr[MASK_ADDRESS(base+offset*8)] * 0.026749f;
+
+		float2 f2 = arr[MASK_ADDRESS(base+offset*2)] * 0.091272f;
+		f2 += arr[MASK_ADDRESS(base+offset*3)] * -0.057544f;
+		f2 += arr[MASK_ADDRESS(base+offset*4)] * -0.591272f;
+		f2 += arr[MASK_ADDRESS(base+offset*5)] * 1.115087f;
+		f2 += arr[MASK_ADDRESS(base+offset*6)] * -0.591272f;
+		f2 += arr[MASK_ADDRESS(base+offset*7)] * -0.057544f;
+		f2 += arr[MASK_ADDRESS(base+offset*8)] * 0.091272f;
+		barrier(CLK_LOCAL_MEM_FENCE);
+		out[gid.x + (gid.y+i*32)*constMemory->bufferStride] = f1;
+		out[gid.x + (gid.y+i*32+half)*constMemory->bufferStride] = f2;
+	}
+
+	{
+		int globalOff = (gid.x + constMemory->bufferStride*(constMemory->resolution.y - get_global_size(1)*2 + gid.y));
+		int localOff = MASK_ADDRESS(lid.x + get_local_size(0)*(constMemory->resolution.y - get_global_size(1)*2 + gid.y));
+		if (get_local_id(1) >= 4)
+		{	
+			float2 l1 = in[globalOff];
+			localMemory[localOff] = l1;
+		}
+		float2 l2 = in[globalOff + constMemory->bufferStride*get_global_size(1)];
+		localMemory[localOff + get_local_size(0)*get_local_size(1)] = l2;
+		if (gid.y >= get_global_size(1)-5 && gid.y <= get_global_size(1)-2)
+			localMemory[MASK_ADDRESS(lid.x + get_local_size(0)*(get_local_size(1)*3 - lid.y - 2)+nWindowPos*2048)] = l2;
+	
+		barrier(CLK_LOCAL_MEM_FENCE);
+
+		uint offset = get_local_size(0);
+		uint base = lid.x + lid.y*get_local_size(0)*2 + offset*(nWindowPos*get_local_size(1)*2-4);
+		float2 f1 = arr[MASK_ADDRESS(base)] * 0.026749f;
+		f1 += arr[MASK_ADDRESS(base+offset)] * -0.016864f;
+		f1 += arr[MASK_ADDRESS(base+offset*2)] * -0.078223f;
+		f1 += arr[MASK_ADDRESS(base+offset*3)] * 0.266864f;
+		f1 += arr[MASK_ADDRESS(base+offset*4)] * 0.602949f;
+		f1 += arr[MASK_ADDRESS(base+offset*5)] * 0.266864f;
+		f1 += arr[MASK_ADDRESS(base+offset*6)] * -0.078223f;
+		f1 += arr[MASK_ADDRESS(base+offset*7)] * -0.016864f;
+		f1 += arr[MASK_ADDRESS(base+offset*8)] * 0.026749f;
+
+		float2 f2 = arr[MASK_ADDRESS(base+offset*2)] * 0.091272f;
+		f2 += arr[MASK_ADDRESS(base+offset*3)] * -0.057544f;
+		f2 += arr[MASK_ADDRESS(base+offset*4)] * -0.591272f;
+		f2 += arr[MASK_ADDRESS(base+offset*5)] * 1.115087f;
+		f2 += arr[MASK_ADDRESS(base+offset*6)] * -0.591272f;
+		f2 += arr[MASK_ADDRESS(base+offset*7)] * -0.057544f;
+		f2 += arr[MASK_ADDRESS(base+offset*8)] * 0.091272f;
+
+		out[gid.x + constMemory->bufferStride*(gid.y+nWindowPos*32)] = f1;
+		out[gid.x + constMemory->bufferStride*(gid.y+nWindowPos*32+half)] = f2;
+	}
+}
+
+#undef MASK_ADDRESS
+#define MASK_ADDRESS(ADDR) (ADDR&(512*4-1))
+
+
+__kernel void verticalSlidingWindow4Columns(
+	__global read_only float4* in,
+	__global write_only float4* out,
+	__constant StructConstMemory* constMemory,
+	__local float4* localMemory,
+	int nWindowPos)
+{
+	const int2 gid = {get_global_id(0), get_global_id(1)};
+	const int2 lid = {get_local_id(0), get_local_id(1)};
+
+	__local float4* arr = localMemory;
+	// load elements:
+	{
+		int gindex = gid.x + constMemory->bufferStride*lid.y;
+		int lindex = lid.x + lid.y*get_local_size(0);
+		float4 l1 = in[gindex];
+		localMemory[lindex] = l1;
+		float4 l2 = in[gindex + constMemory->bufferStride*get_local_size(1)];
+		localMemory[lindex + get_local_size(1)*get_local_size(0)] = l2;
+
+		if (lid.y <= 4 && lid.y >= 1)
+			localMemory[MASK_ADDRESS(lid.x - lid.y*get_local_size(0))] = l1;
+		if (lid.y <= 3)
+		{
+			float4 l1 = in[gindex + (constMemory->bufferStride*(lid.y+get_local_size(1)*2))];
+			localMemory[lindex + get_local_size(0)*(lid.y+get_local_size(1)*2)] = l1;
+		}
+		barrier(CLK_LOCAL_MEM_FENCE);
+
+
+		uint offset = get_local_size(0);
+		uint base = lid.x + lid.y*get_local_size(0)*2 + offset*(-4);
+		float4 f1 = arr[MASK_ADDRESS(base)] * 0.026749f;
+		f1 += arr[MASK_ADDRESS(base+offset)] * -0.016864f;
+		f1 += arr[MASK_ADDRESS(base+offset*2)] * -0.078223f;
+		float4 f2 = arr[MASK_ADDRESS(base+offset*2)] * 0.091272f;
+		f1 += arr[MASK_ADDRESS(base+offset*3)] * 0.266864f;
+		f2 += arr[MASK_ADDRESS(base+offset*3)] * -0.057544f;
+		f1 += arr[MASK_ADDRESS(base+offset*4)] * 0.602949f;
+		f2 += arr[MASK_ADDRESS(base+offset*4)] * -0.591272f;
+		f1 += arr[MASK_ADDRESS(base+offset*5)] * 0.266864f;
+		f2 += arr[MASK_ADDRESS(base+offset*5)] * 1.115087f;
+		f1 += arr[MASK_ADDRESS(base+offset*6)] * -0.078223f;
+		f2 += arr[MASK_ADDRESS(base+offset*6)] * -0.591272f;
+		f1 += arr[MASK_ADDRESS(base+offset*7)] * -0.016864f;
+		f2 += arr[MASK_ADDRESS(base+offset*7)] * -0.057544f;
+		f1 += arr[MASK_ADDRESS(base+offset*8)] * 0.026749f;
+		f2 += arr[MASK_ADDRESS(base+offset*8)] * 0.091272f;
+
+		barrier(CLK_LOCAL_MEM_FENCE);
+		out[gindex] = f1;
+		out[gindex + constMemory->bufferStride*half] = f2;
+	}
+
+	// DEBUG:
+	for (int i = 1; i < nWindowPos; i++)
+	{
+		int globalOff = (gid.x + constMemory->bufferStride*(lid.y + 4 + i*get_local_size(1)*2));
+		int localOff = MASK_ADDRESS(lid.x + (lid.y+4)*get_local_size(0) + i*1024); 
+		float4 l1 = in[globalOff];
+		localMemory[localOff] = l1;
+		float4 l2 = in[globalOff + constMemory->bufferStride*get_local_size(1)];
+		localMemory[MASK_ADDRESS(localOff + get_local_size(0)*get_local_size(1))] = l2;
+		barrier(CLK_LOCAL_MEM_FENCE);
+
+		uint offset = get_local_size(0);
+		uint base = lid.x + lid.y*get_local_size(0)*2 + offset*(i*get_local_size(1)*2-4);
+		float4 f1 = arr[MASK_ADDRESS(base)] * 0.026749f;
+		f1 += arr[MASK_ADDRESS(base+offset)] * -0.016864f;
+		float4 f2 = arr[MASK_ADDRESS(base+offset*2)] * 0.091272f;
+		f1 += arr[MASK_ADDRESS(base+offset*2)] * -0.078223f;
+		f2 += arr[MASK_ADDRESS(base+offset*3)] * -0.057544f;
+		f1 += arr[MASK_ADDRESS(base+offset*3)] * 0.266864f;
+		f1 += arr[MASK_ADDRESS(base+offset*4)] * 0.602949f;
+		f2 += arr[MASK_ADDRESS(base+offset*4)] * -0.591272f;
+		f1 += arr[MASK_ADDRESS(base+offset*5)] * 0.266864f;
+		f2 += arr[MASK_ADDRESS(base+offset*5)] * 1.115087f;
+		f1 += arr[MASK_ADDRESS(base+offset*6)] * -0.078223f;
+		f2 += arr[MASK_ADDRESS(base+offset*6)] * -0.591272f;
+		f1 += arr[MASK_ADDRESS(base+offset*7)] * -0.016864f;
+		f2 += arr[MASK_ADDRESS(base+offset*7)] * -0.057544f;
+		f1 += arr[MASK_ADDRESS(base+offset*8)] * 0.026749f;
+		f2 += arr[MASK_ADDRESS(base+offset*8)] * 0.091272f;
+
+		barrier(CLK_LOCAL_MEM_FENCE);
+		out[gid.x + (gid.y+i*16)*constMemory->bufferStride] = f1;
+		out[gid.x + (gid.y+i*16+half)*constMemory->bufferStride] = f2;
+	}
+
+	{
+		int globalOff = (gid.x + constMemory->bufferStride*(constMemory->resolution.y - get_global_size(1)*2 + gid.y));
+		int localOff = MASK_ADDRESS(lid.x + get_local_size(0)*(constMemory->resolution.y - get_global_size(1)*2 + gid.y));
+		if (get_local_id(1) >= 4)
+		{	
+			float4 l1 = in[globalOff];
+			localMemory[localOff] = l1;
+		}
+		float4 l2 = in[globalOff + constMemory->bufferStride*get_global_size(1)];
+		localMemory[localOff + get_local_size(0)*get_local_size(1)] = l2;
+		if (gid.y >= get_global_size(1)-5 && gid.y <= get_global_size(1)-2)
+			localMemory[MASK_ADDRESS(lid.x + get_local_size(0)*(get_local_size(1)*3 - lid.y - 2)+nWindowPos*2048)] = l2;
+	
+		barrier(CLK_LOCAL_MEM_FENCE);
+
+		uint offset = get_local_size(0);
+		uint base = lid.x + lid.y*get_local_size(0)*2 + offset*(nWindowPos*get_local_size(1)*2-4);
+		float4 f1 = arr[MASK_ADDRESS(base)] * 0.026749f;
+		f1 += arr[MASK_ADDRESS(base+offset)] * -0.016864f;
+		f1 += arr[MASK_ADDRESS(base+offset*2)] * -0.078223f;
+		f1 += arr[MASK_ADDRESS(base+offset*3)] * 0.266864f;
+		f1 += arr[MASK_ADDRESS(base+offset*4)] * 0.602949f;
+		f1 += arr[MASK_ADDRESS(base+offset*5)] * 0.266864f;
+		f1 += arr[MASK_ADDRESS(base+offset*6)] * -0.078223f;
+		f1 += arr[MASK_ADDRESS(base+offset*7)] * -0.016864f;
+		f1 += arr[MASK_ADDRESS(base+offset*8)] * 0.026749f;
+
+		float4 f2 = arr[MASK_ADDRESS(base+offset*2)] * 0.091272f;
+		f2 += arr[MASK_ADDRESS(base+offset*3)] * -0.057544f;
+		f2 += arr[MASK_ADDRESS(base+offset*4)] * -0.591272f;
+		f2 += arr[MASK_ADDRESS(base+offset*5)] * 1.115087f;
+		f2 += arr[MASK_ADDRESS(base+offset*6)] * -0.591272f;
+		f2 += arr[MASK_ADDRESS(base+offset*7)] * -0.057544f;
+		f2 += arr[MASK_ADDRESS(base+offset*8)] * 0.091272f;
+
+		out[gid.x + constMemory->bufferStride*(gid.y+nWindowPos*16)] = f1;
+		out[gid.x + constMemory->bufferStride*(gid.y+nWindowPos*16+half)] = f2;
+	}
+}

@@ -31,6 +31,13 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tutorial02", "Tutorial02\Tu
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tutorial03", "Tutorial03\Tutorial03.vcxproj", "{6A8F197E-39C6-4C1F-BB9A-9E813A7ABE19}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestFinalWavelets", "TestFinalWavelets\TestFinalWavelets.vcxproj", "{5008C560-2710-4B5B-9E4A-CD4A0837F49B}"
+	ProjectSection(ProjectDependencies) = postProject
+		{5A3C8F8D-75FE-42A6-ACB1-D0CBC487CD3D} = {5A3C8F8D-75FE-42A6-ACB1-D0CBC487CD3D}
+		{C5DDB89B-DA78-4892-882D-560F90DC093F} = {C5DDB89B-DA78-4892-882D-560F90DC093F}
+		{8A0EE9AF-0E00-467E-9FB3-80EA52BD7AD9} = {8A0EE9AF-0E00-467E-9FB3-80EA52BD7AD9}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -97,6 +104,10 @@ Global
 		{6A8F197E-39C6-4C1F-BB9A-9E813A7ABE19}.Debug|Win32.Build.0 = Debug|Win32
 		{6A8F197E-39C6-4C1F-BB9A-9E813A7ABE19}.Release|Win32.ActiveCfg = Release|Win32
 		{6A8F197E-39C6-4C1F-BB9A-9E813A7ABE19}.Release|Win32.Build.0 = Release|Win32
+		{5008C560-2710-4B5B-9E4A-CD4A0837F49B}.Debug|Win32.ActiveCfg = Debug|Win32
+		{5008C560-2710-4B5B-9E4A-CD4A0837F49B}.Debug|Win32.Build.0 = Debug|Win32
+		{5008C560-2710-4B5B-9E4A-CD4A0837F49B}.Release|Win32.ActiveCfg = Release|Win32
+		{5008C560-2710-4B5B-9E4A-CD4A0837F49B}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
