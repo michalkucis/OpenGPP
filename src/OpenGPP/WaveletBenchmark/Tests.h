@@ -3,8 +3,8 @@
 #include <sstream>
 
 
-//#define DISBALE_IO_USERTRANS
-#define NUM_TESTS(res) (int)800*(128.0f/res.x)
+#define DISBALE_IO_USERTRANS
+#define NUM_TESTS(res) (int)200*(1024.0f/res.x)
 
 
 class Test
@@ -46,59 +46,59 @@ public:
 	}
 	int getPerformsCount(int2 resolution)
 	{
-		return NUM_TESTS(resolution);
+		return 1;
 	}
 	string getName()
 	{
-		return "Copying between host and global memory";
+		return "Init   ";
 	}
 };
-
-class TestCompleteWithHostMemTransfer: public Test
-{
-	void init(Ptr<ClFacade> facade, int2 resolution)
-	{
-		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromEXRFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
-		m_vecUT.pushBack(new UThorizonConvolutionAsync2(facade));
-		m_vecUT.pushBack(new UTverticalSlidingWindow2Columns(facade));
-		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
-
-		facade->setResolution(resolution);
-
-		for(uint i = 0; i < m_vecUT.getSize(); i++)
-			m_vecUT[i]->prepare(resolution);
-	}
-	int getPerformsCount(int2 resolution)
-	{
-		return NUM_TESTS(resolution);
-	}
-	string getName()
-	{
-		return "Complete test with host mem transfer";
-	}
-};
-
-class TestCompleteWithoutHostMemTransfer: public Test
-{
-	void init(Ptr<ClFacade> facade, int2 resolution)
-	{
-		m_vecUT.pushBack(new UThorizonConvolutionAsync2(facade));
-		m_vecUT.pushBack(new UTverticalSlidingWindow2Columns(facade));
-
-		facade->setResolution(resolution);
-
-		for(uint i = 0; i < m_vecUT.getSize(); i++)
-			m_vecUT[i]->prepare(resolution);
-	}
-	int getPerformsCount(int2 resolution)
-	{
-		return NUM_TESTS(resolution);
-	}
-	string getName()
-	{
-		return "Complete test without host mem transfer";
-	}
-};
+//
+//class TestCompleteWithHostMemTransfer: public Test
+//{
+//	void init(Ptr<ClFacade> facade, int2 resolution)
+//	{
+//		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromEXRFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
+//		m_vecUT.pushBack(new UThorizonConvolutionAsync2(facade));
+//		m_vecUT.pushBack(new UTverticalSlidingWindow2Columns(facade));
+//		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
+//
+//		facade->setResolution(resolution);
+//
+//		for(uint i = 0; i < m_vecUT.getSize(); i++)
+//			m_vecUT[i]->prepare(resolution);
+//	}
+//	int getPerformsCount(int2 resolution)
+//	{
+//		return NUM_TESTS(resolution);
+//	}
+//	string getName()
+//	{
+//		return "Complete test with host mem transfer";
+//	}
+//};
+//
+//class TestCompleteWithoutHostMemTransfer: public Test
+//{
+//	void init(Ptr<ClFacade> facade, int2 resolution)
+//	{
+//		m_vecUT.pushBack(new UThorizonConvolutionAsync2(facade));
+//		m_vecUT.pushBack(new UTverticalSlidingWindow2Columns(facade));
+//
+//		facade->setResolution(resolution);
+//
+//		for(uint i = 0; i < m_vecUT.getSize(); i++)
+//			m_vecUT[i]->prepare(resolution);
+//	}
+//	int getPerformsCount(int2 resolution)
+//	{
+//		return NUM_TESTS(resolution);
+//	}
+//	string getName()
+//	{
+//		return "Complete test without host mem transfer";
+//	}
+//};
 
 class TestI: public Test
 {
@@ -119,7 +119,7 @@ public:
 	}
 	string getName()
 	{
-		return "Copying from host and global memory";
+		return "to VRAM";
 	}
 };
 
@@ -142,7 +142,7 @@ public:
 	}
 	string getName()
 	{
-		return "Copying from global memory and host";
+		return "to RAM ";
 	}
 };
 //class TestIOLocalMemory: public Test
@@ -169,228 +169,228 @@ public:
 //	}
 //};
 
-
-class TestHorizonSyncLifting: public Test
-{
-public:
-	void init(Ptr<ClFacade> facade, int2 resolution)
-	{
-#ifndef DISBALE_IO_USERTRANS
-		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromEXRFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
-#endif
-		m_vecUT.pushBack(new UThorizonLiftingSync(facade));
-#ifndef DISBALE_IO_USERTRANS
-		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
-#endif
-
-		facade->setResolution(resolution);
-
-		for(uint i = 0; i < m_vecUT.getSize(); i++)
-			m_vecUT[i]->prepare(resolution);
-	}
-	int getPerformsCount(int2 resolution)
-	{
-		return NUM_TESTS(resolution);
-	}
-	string getName()
-	{
-		return "Horizontal synchronized lifting";
-	}
-};
-
-
-class TestHorizonAsyncLifting: public Test
-{
-public:
-	void init(Ptr<ClFacade> facade, int2 resolution)
-	{
-#ifndef DISBALE_IO_USERTRANS
-		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromEXRFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
-#endif
-		m_vecUT.pushBack(new UThorizonLiftingAsync(facade));
-#ifndef DISBALE_IO_USERTRANS
-		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
-#endif
-
-		facade->setResolution(resolution);
-
-		for(uint i = 0; i < m_vecUT.getSize(); i++)
-			m_vecUT[i]->prepare(resolution);
-	}
-	int getPerformsCount(int2 resolution)
-	{
-		return NUM_TESTS(resolution);
-	}
-	string getName()
-	{
-		return "Horizontal asynchronous lifting";
-	}
-};
-
-class TestHorizonAsyncConvolution: public Test
-{
-	void init(Ptr<ClFacade> facade, int2 resolution)
-	{
-#ifndef DISBALE_IO_USERTRANS
-		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromEXRFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
-#endif
-		m_vecUT.pushBack(new UThorizonConvolutionAsync(facade));
-#ifndef DISBALE_IO_USERTRANS
-		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
-#endif
-
-		facade->setResolution(resolution);
-
-		for(uint i = 0; i < m_vecUT.getSize(); i++)
-			m_vecUT[i]->prepare(resolution);
-	}
-	int getPerformsCount(int2 resolution)
-	{
-		return NUM_TESTS(resolution);
-	}
-	string getName()
-	{
-		return "Horizontal asynchronous convolution";
-	}
-};
-
-class TestHorizonAsyncConvolution2: public Test
-{
-	void init(Ptr<ClFacade> facade, int2 resolution)
-	{
-#ifndef DISBALE_IO_USERTRANS
-		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromEXRFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
-#endif
-		m_vecUT.pushBack(new UThorizonConvolutionAsync2(facade));
-#ifndef DISBALE_IO_USERTRANS
-		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
-#endif
-
-		facade->setResolution(resolution);
-
-		for(uint i = 0; i < m_vecUT.getSize(); i++)
-			m_vecUT[i]->prepare(resolution);
-	}
-	int getPerformsCount(int2 resolution)
-	{
-		return NUM_TESTS(resolution);
-	}
-	string getName()
-	{
-		return "Horizontal asynchronous convolution - 2 rows";
-	}
-};
-
-class TestHorizonAsyncConvolution4: public Test
-{
-	void init(Ptr<ClFacade> facade, int2 resolution)
-	{
-#ifndef DISBALE_IO_USERTRANS
-		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromEXRFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
-#endif
-		m_vecUT.pushBack(new UThorizonConvolutionAsync4(facade));
-#ifndef DISBALE_IO_USERTRANS
-		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
-#endif
-
-		facade->setResolution(resolution);
-
-		for(uint i = 0; i < m_vecUT.getSize(); i++)
-			m_vecUT[i]->prepare(resolution);
-	}
-	int getPerformsCount(int2 resolution)
-	{
-		return NUM_TESTS(resolution);
-	}
-	string getName()
-	{
-		return "Horizontal asynchronous convolution - 4 rows";
-	}
-};
-
-class TestVerticalAsyncConvolution: public Test
-{
-public:
-	void init(Ptr<ClFacade> facade, int2 resolution)
-	{
-#ifndef DISBALE_IO_USERTRANS
-		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromEXRFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
-#endif
-		m_vecUT.pushBack(new UTverticalConvolutionAsync(facade));
-#ifndef DISBALE_IO_USERTRANS
-		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
-#endif
-
-		facade->setResolution(resolution);
-
-		for(uint i = 0; i < m_vecUT.getSize(); i++)
-			m_vecUT[i]->prepare(resolution);
-	}
-	int getPerformsCount(int2 resolution)
-	{
-		return NUM_TESTS(resolution);
-	}
-	string getName()
-	{
-		return "Vertical - naive solution";
-	}
-};
-
-class TestVerticalWithTranspose: public Test
-{
-	void init(Ptr<ClFacade> facade, int2 resolution)
-	{
-#ifndef DISBALE_IO_USERTRANS
-		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromEXRFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
-#endif
-		m_vecUT.pushBack(new UTtranspose2x2(facade));
-		m_vecUT.pushBack(new UThorizonConvolutionAsyncTransposed(facade));
-		m_vecUT.pushBack(new UTtranspose2x2(facade));
-#ifndef DISBALE_IO_USERTRANS
-		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
-#endif
-
-		facade->setResolution(resolution);
-
-		for(uint i = 0; i < m_vecUT.getSize(); i++)
-			m_vecUT[i]->prepare(resolution);
-	}
-	int getPerformsCount(int2 resolution)
-	{
-		return NUM_TESTS(resolution);
-	}
-	string getName()
-	{
-		return "Vertical - with transposition";
-	}
-};
-
-class TestVerticalOverlappedTiles: public Test
-{
-	void init(Ptr<ClFacade> facade, int2 resolution)
-	{
-#ifndef DISBALE_IO_USERTRANS
-		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromEXRFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
-#endif
-		m_vecUT.pushBack(new UTverticalOverlappedTiles(facade));
-#ifndef DISBALE_IO_USERTRANS
-		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
-#endif
-
-		facade->setResolution(resolution);
-
-		for(uint i = 0; i < m_vecUT.getSize(); i++)
-			m_vecUT[i]->prepare(resolution);
-	}
-	int getPerformsCount(int2 resolution)
-	{
-		return NUM_TESTS(resolution);
-	}
-	string getName()
-	{
-		return "Vertical - overlapped tiles - 1 column";
-	}
-};
+//
+//class TestHorizonSyncLifting: public Test
+//{
+//public:
+//	void init(Ptr<ClFacade> facade, int2 resolution)
+//	{
+//#ifndef DISBALE_IO_USERTRANS
+//		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromEXRFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
+//#endif
+//		m_vecUT.pushBack(new UThorizonLiftingSync(facade));
+//#ifndef DISBALE_IO_USERTRANS
+//		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
+//#endif
+//
+//		facade->setResolution(resolution);
+//
+//		for(uint i = 0; i < m_vecUT.getSize(); i++)
+//			m_vecUT[i]->prepare(resolution);
+//	}
+//	int getPerformsCount(int2 resolution)
+//	{
+//		return NUM_TESTS(resolution);
+//	}
+//	string getName()
+//	{
+//		return "Horizontal synchronized lifting";
+//	}
+//};
+//
+//
+//class TestHorizonAsyncLifting: public Test
+//{
+//public:
+//	void init(Ptr<ClFacade> facade, int2 resolution)
+//	{
+//#ifndef DISBALE_IO_USERTRANS
+//		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromEXRFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
+//#endif
+//		m_vecUT.pushBack(new UThorizonLiftingAsync(facade));
+//#ifndef DISBALE_IO_USERTRANS
+//		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
+//#endif
+//
+//		facade->setResolution(resolution);
+//
+//		for(uint i = 0; i < m_vecUT.getSize(); i++)
+//			m_vecUT[i]->prepare(resolution);
+//	}
+//	int getPerformsCount(int2 resolution)
+//	{
+//		return NUM_TESTS(resolution);
+//	}
+//	string getName()
+//	{
+//		return "Horizontal asynchronous lifting";
+//	}
+//};
+//
+//class TestHorizonAsyncConvolution: public Test
+//{
+//	void init(Ptr<ClFacade> facade, int2 resolution)
+//	{
+//#ifndef DISBALE_IO_USERTRANS
+//		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromEXRFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
+//#endif
+//		m_vecUT.pushBack(new UThorizonConvolutionAsync(facade));
+//#ifndef DISBALE_IO_USERTRANS
+//		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
+//#endif
+//
+//		facade->setResolution(resolution);
+//
+//		for(uint i = 0; i < m_vecUT.getSize(); i++)
+//			m_vecUT[i]->prepare(resolution);
+//	}
+//	int getPerformsCount(int2 resolution)
+//	{
+//		return NUM_TESTS(resolution);
+//	}
+//	string getName()
+//	{
+//		return "Horizontal asynchronous convolution";
+//	}
+//};
+//
+//class TestHorizonAsyncConvolution2: public Test
+//{
+//	void init(Ptr<ClFacade> facade, int2 resolution)
+//	{
+//#ifndef DISBALE_IO_USERTRANS
+//		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromEXRFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
+//#endif
+//		m_vecUT.pushBack(new UThorizonConvolutionAsync2(facade));
+//#ifndef DISBALE_IO_USERTRANS
+//		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
+//#endif
+//
+//		facade->setResolution(resolution);
+//
+//		for(uint i = 0; i < m_vecUT.getSize(); i++)
+//			m_vecUT[i]->prepare(resolution);
+//	}
+//	int getPerformsCount(int2 resolution)
+//	{
+//		return NUM_TESTS(resolution);
+//	}
+//	string getName()
+//	{
+//		return "Horizontal asynchronous convolution - 2 rows";
+//	}
+//};
+//
+//class TestHorizonAsyncConvolution4: public Test
+//{
+//	void init(Ptr<ClFacade> facade, int2 resolution)
+//	{
+//#ifndef DISBALE_IO_USERTRANS
+//		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromEXRFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
+//#endif
+//		m_vecUT.pushBack(new UThorizonConvolutionAsync4(facade));
+//#ifndef DISBALE_IO_USERTRANS
+//		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
+//#endif
+//
+//		facade->setResolution(resolution);
+//
+//		for(uint i = 0; i < m_vecUT.getSize(); i++)
+//			m_vecUT[i]->prepare(resolution);
+//	}
+//	int getPerformsCount(int2 resolution)
+//	{
+//		return NUM_TESTS(resolution);
+//	}
+//	string getName()
+//	{
+//		return "Horizontal asynchronous convolution - 4 rows";
+//	}
+//};
+//
+//class TestVerticalAsyncConvolution: public Test
+//{
+//public:
+//	void init(Ptr<ClFacade> facade, int2 resolution)
+//	{
+//#ifndef DISBALE_IO_USERTRANS
+//		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromEXRFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
+//#endif
+//		m_vecUT.pushBack(new UTverticalConvolutionAsync(facade));
+//#ifndef DISBALE_IO_USERTRANS
+//		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
+//#endif
+//
+//		facade->setResolution(resolution);
+//
+//		for(uint i = 0; i < m_vecUT.getSize(); i++)
+//			m_vecUT[i]->prepare(resolution);
+//	}
+//	int getPerformsCount(int2 resolution)
+//	{
+//		return NUM_TESTS(resolution);
+//	}
+//	string getName()
+//	{
+//		return "Vertical - naive solution";
+//	}
+//};
+//
+//class TestVerticalWithTranspose: public Test
+//{
+//	void init(Ptr<ClFacade> facade, int2 resolution)
+//	{
+//#ifndef DISBALE_IO_USERTRANS
+//		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromEXRFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
+//#endif
+//		m_vecUT.pushBack(new UTtranspose2x2(facade));
+//		m_vecUT.pushBack(new UThorizonConvolutionAsyncTransposed(facade));
+//		m_vecUT.pushBack(new UTtranspose2x2(facade));
+//#ifndef DISBALE_IO_USERTRANS
+//		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
+//#endif
+//
+//		facade->setResolution(resolution);
+//
+//		for(uint i = 0; i < m_vecUT.getSize(); i++)
+//			m_vecUT[i]->prepare(resolution);
+//	}
+//	int getPerformsCount(int2 resolution)
+//	{
+//		return NUM_TESTS(resolution);
+//	}
+//	string getName()
+//	{
+//		return "Vertical - with transposition";
+//	}
+//};
+//
+//class TestVerticalOverlappedTiles: public Test
+//{
+//	void init(Ptr<ClFacade> facade, int2 resolution)
+//	{
+//#ifndef DISBALE_IO_USERTRANS
+//		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromEXRFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
+//#endif
+//		m_vecUT.pushBack(new UTverticalOverlappedTiles(facade));
+//#ifndef DISBALE_IO_USERTRANS
+//		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
+//#endif
+//
+//		facade->setResolution(resolution);
+//
+//		for(uint i = 0; i < m_vecUT.getSize(); i++)
+//			m_vecUT[i]->prepare(resolution);
+//	}
+//	int getPerformsCount(int2 resolution)
+//	{
+//		return NUM_TESTS(resolution);
+//	}
+//	string getName()
+//	{
+//		return "Vertical - overlapped tiles - 1 column";
+//	}
+//};
 
 
 class TestVerticalSlidingWindow: public Test
@@ -481,62 +481,62 @@ class TestVerticalSlidingWindow4Columns: public Test
 	}
 };
 
-
-
-class TestVerticalOverlappedTiles2Rows: public Test
-{
-	void init(Ptr<ClFacade> facade, int2 resolution)
-	{
-#ifndef DISBALE_IO_USERTRANS
-		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromEXRFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
-#endif
-		m_vecUT.pushBack(new UTverticalOverlappedTiles2Rows(facade));
-#ifndef DISBALE_IO_USERTRANS
-		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
-#endif
-
-		facade->setResolution(resolution);
-
-		for(uint i = 0; i < m_vecUT.getSize(); i++)
-			m_vecUT[i]->prepare(resolution);
-	}
-	int getPerformsCount(int2 resolution)
-	{
-		return 100;
-	}
-	string getName()
-	{
-		return "Vertical - overlapped tiles - 2 rows";
-	}
-};
-
-
-class TestVerticalOverlappedTiles4Rows: public Test
-{
-	void init(Ptr<ClFacade> facade, int2 resolution)
-	{
-#ifndef DISBALE_IO_USERTRANS
-		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromEXRFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
-#endif
-		m_vecUT.pushBack(new UTverticalOverlappedTiles4Rows(facade));
-#ifndef DISBALE_IO_USERTRANS
-		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
-#endif
-
-		facade->setResolution(resolution);
-
-		for(uint i = 0; i < m_vecUT.getSize(); i++)
-			m_vecUT[i]->prepare(resolution);
-	}
-	int getPerformsCount(int2 resolution)
-	{
-		return 100;
-	}
-	string getName()
-	{
-		return "Vertical - overlapped tiles - 4 rows";
-	}
-};
+//
+//
+//class TestVerticalOverlappedTiles2Rows: public Test
+//{
+//	void init(Ptr<ClFacade> facade, int2 resolution)
+//	{
+//#ifndef DISBALE_IO_USERTRANS
+//		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromEXRFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
+//#endif
+//		m_vecUT.pushBack(new UTverticalOverlappedTiles2Rows(facade));
+//#ifndef DISBALE_IO_USERTRANS
+//		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
+//#endif
+//
+//		facade->setResolution(resolution);
+//
+//		for(uint i = 0; i < m_vecUT.getSize(); i++)
+//			m_vecUT[i]->prepare(resolution);
+//	}
+//	int getPerformsCount(int2 resolution)
+//	{
+//		return 100;
+//	}
+//	string getName()
+//	{
+//		return "Vertical - overlapped tiles - 2 rows";
+//	}
+//};
+//
+//
+//class TestVerticalOverlappedTiles4Rows: public Test
+//{
+//	void init(Ptr<ClFacade> facade, int2 resolution)
+//	{
+//#ifndef DISBALE_IO_USERTRANS
+//		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromEXRFile(facade, "exrChangeLightIntensity\\img_light1_lamp250_pos0.exr"));
+//#endif
+//		m_vecUT.pushBack(new UTverticalOverlappedTiles4Rows(facade));
+//#ifndef DISBALE_IO_USERTRANS
+//		m_vecUT.pushBack(new UTsaveClBufferToArray(facade));
+//#endif
+//
+//		facade->setResolution(resolution);
+//
+//		for(uint i = 0; i < m_vecUT.getSize(); i++)
+//			m_vecUT[i]->prepare(resolution);
+//	}
+//	int getPerformsCount(int2 resolution)
+//	{
+//		return 100;
+//	}
+//	string getName()
+//	{
+//		return "Vertical - overlapped tiles - 4 rows";
+//	}
+//};
 
 class TestVertStripSync: public Test
 {
@@ -558,11 +558,11 @@ public:
 	}
 	int getPerformsCount(int2 resolution)
 	{
-		return 1000;
+		return NUM_TESTS(resolution);
 	}
 	string getName()
 	{
-		return "Vertical - 2 coef - sync";
+		return "2 sync ";
 	}
 };
 
@@ -588,11 +588,11 @@ public:
 	}
 	int getPerformsCount(int2 resolution)
 	{
-		return 1000;
+		return NUM_TESTS(resolution);
 	}
 	string getName()
 	{
-		return "Vertical - 2 coef - no sync";
+		return "2 coef ";
 	}
 };
 
@@ -617,11 +617,11 @@ public:
 	}
 	int getPerformsCount(int2 resolution)
 	{
-		return 1000;
+		return NUM_TESTS(resolution);
 	}
 	string getName()
 	{
-		return "Vertical - 4 coef - no sync";
+		return "4 coef ";
 	}
 };
 
@@ -646,11 +646,11 @@ public:
 	}
 	int getPerformsCount(int2 resolution)
 	{
-		return 1000;
+		return NUM_TESTS(resolution);
 	}
 	string getName()
 	{
-		return "Vertical - 8 coef - no sync";
+		return "8 coef ";
 	}
 };
 
@@ -675,57 +675,191 @@ public:
 	}
 	int getPerformsCount(int2 resolution)
 	{
-		return 1000;
+		return NUM_TESTS(resolution);
 	}
 	string getName()
 	{
-		return "Vertical - 16 coef - no sync";
+		return "16 coef";
 	}
 };
 
-//class TestVertTranspose: public Test
-//{
-//public:
-//	void init(Ptr<ClFacade> facade, int2 resolution)
-//	{
-//#ifndef DISBALE_IO_USERTRANS
-//		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromDLMFile(facade, "input1kx1k.mat", resolution));
-//#endif
-//		m_vecUT.pushBack(new UTvertStrips16Coef(facade));
-//#ifndef DISBALE_IO_USERTRANS
-//		m_vecUT.pushBack(new UTsaveBufferToDLM(facade, "out.dlm"));
-//#endif
-//
-//		facade->setResolution(resolution);
-//
-//		for(uint i = 0; i < m_vecUT.getSize(); i++)
-//			m_vecUT[i]->prepare(resolution);
-//	}
-//	int getPerformsCount(int2 resolution)
-//	{
-//		return 1000;
-//	}
-//	string getName()
-//	{
-//		return "Vertical - 16 coef - no sync";
-//	}
-//};
+class TestVertTranspose: public Test
+{
+public:
+	void init(Ptr<ClFacade> facade, int2 resolution)
+	{
+#ifndef DISBALE_IO_USERTRANS
+		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromDLMFile(facade, "input1kx1k.mat", resolution));
+#endif
+		m_vecUT.pushBack(new UTtransposeBest(facade));
+		m_vecUT.pushBack(new UThorLiftingAsync8Coef(facade));
+		m_vecUT.pushBack(new UTtransposeBest(facade));
+#ifndef DISBALE_IO_USERTRANS
+		m_vecUT.pushBack(new UTsaveBufferToDLM(facade, "out.dlm"));
+#endif
+
+		facade->setResolution(resolution);
+
+		for(uint i = 0; i < m_vecUT.getSize(); i++)
+			m_vecUT[i]->prepare(resolution);
+	}
+	int getPerformsCount(int2 resolution)
+	{
+		return NUM_TESTS(resolution);
+	}
+	string getName()
+	{
+		return "trans ";
+	}
+};
+
+
+class TestHorLiftingAsync2Coef: public Test
+{
+public:
+	void init(Ptr<ClFacade> facade, int2 resolution)
+	{
+#ifndef DISBALE_IO_USERTRANS
+		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromDLMFile(facade, "input1kx1k.mat", resolution));
+#endif
+		m_vecUT.pushBack(new UThorLiftingAsync2Coef(facade));
+#ifndef DISBALE_IO_USERTRANS
+		m_vecUT.pushBack(new UTsaveBufferToDLM(facade, "out.dlm"));
+#endif
+
+		facade->setResolution(resolution);
+
+		for(uint i = 0; i < m_vecUT.getSize(); i++)
+			m_vecUT[i]->prepare(resolution);
+	}
+	int getPerformsCount(int2 resolution)
+	{
+		return NUM_TESTS(resolution);
+	}
+	string getName()
+	{
+		return "hor 2 async";
+	}
+};
+
+
+class TestHorLiftingAsync8Coef: public Test
+{
+public:
+	void init(Ptr<ClFacade> facade, int2 resolution)
+	{
+#ifndef DISBALE_IO_USERTRANS
+		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromDLMFile(facade, "input1kx1k.mat", resolution));
+#endif
+		m_vecUT.pushBack(new UThorLiftingAsync8Coef(facade));
+		#ifndef DISBALE_IO_USERTRANS
+		m_vecUT.pushBack(new UTsaveBufferToDLM(facade, "out.dlm"));
+#endif
+
+		facade->setResolution(resolution);
+
+		for(uint i = 0; i < m_vecUT.getSize(); i++)
+			m_vecUT[i]->prepare(resolution);
+	}
+	int getPerformsCount(int2 resolution)
+	{
+		return NUM_TESTS(resolution);
+	}
+	string getName()
+	{
+		return "hor 8 async";
+	}
+};
+
+
+class TestHorConv2Coef: public Test
+{
+public:
+	void init(Ptr<ClFacade> facade, int2 resolution)
+	{
+#ifndef DISBALE_IO_USERTRANS
+		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromDLMFile(facade, "input1kx1k.mat", resolution));
+#endif
+		m_vecUT.pushBack(new UThorConv2Coef(facade));
+#ifndef DISBALE_IO_USERTRANS
+		m_vecUT.pushBack(new UTsaveBufferToDLM(facade, "out.dlm"));
+#endif
+
+		facade->setResolution(resolution);
+
+		for(uint i = 0; i < m_vecUT.getSize(); i++)
+			m_vecUT[i]->prepare(resolution);
+	}
+	int getPerformsCount(int2 resolution)
+	{
+		return NUM_TESTS(resolution);
+	}
+	string getName()
+	{
+		return "conv 2     ";
+	}
+};
 
 
 
+
+class TestHorLiftSync2Coef: public Test
+{
+public:
+	void init(Ptr<ClFacade> facade, int2 resolution)
+	{
+#ifndef DISBALE_IO_USERTRANS
+		m_vecUT.pushBack(new UTloadDynamic1ChannelBufferFromDLMFile(facade, "input1kx1k.mat", resolution));
+#endif
+		//m_vecUT.pushBack(new UTtransposeBest(facade));
+		m_vecUT.pushBack(new UThorLiftSync2Coef(facade));
+		//m_vecUT.pushBack(new UTtransposeBest(facade));
+#ifndef DISBALE_IO_USERTRANS
+		m_vecUT.pushBack(new UTsaveBufferToDLM(facade, "out.dlm"));
+#endif
+
+		facade->setResolution(resolution);
+
+		for(uint i = 0; i < m_vecUT.getSize(); i++)
+			m_vecUT[i]->prepare(resolution);
+	}
+	int getPerformsCount(int2 resolution)
+	{
+		return NUM_TESTS(resolution);
+	}
+	string getName()
+	{
+		return "lift 2 sync";
+	}
+};
+
+
+
+
+double round(double d, double base = 1.0)
+{
+	return base*floor(d/base + 0.5);
+}
 
 void initResolutions(Vector<int2>& vecResolutions)
 {
 	vecResolutions.clear();
 
-	//vecResolutions.pushBack(int2(64, 64));
-	vecResolutions.pushBack(int2(128,128));
-	vecResolutions.pushBack(int2(256,256));
-	vecResolutions.pushBack(int2(512,512));
-	vecResolutions.pushBack(int2(1024,1024));
-	//vecResolutions.pushBack(int2(2048,2048));
-	//vecResolutions.pushBack(int2(3072,3072));
-	//vecResolutions.pushBack(int2(4096,4096));	
+	int minRes = 128;
+	int maxRes = 1024*8;
+	int steps = 32;
+
+	int prevRes = 0;
+	for (int i = 0; i < steps; i++)
+	{
+		double range = (maxRes/minRes);
+		double step = log2(range)/(steps-1);
+		double val = minRes*pow(2.0, step*i);
+		int res = round(val, 64);
+		if (res == prevRes)
+			continue;
+		vecResolutions.pushBack(res);
+	}
 }
 
 
@@ -733,20 +867,38 @@ void initResolutions(Vector<int2>& vecResolutions)
 
 void initTests(Vector<Ptr<Test>>& tests)
 {
-	tests.pushBack(new TestIO);
-	tests.pushBack(new TestVertStripSync);
+	//tests.pushBack(new TestI);
+	//tests.pushBack(new TestO);
 
 	tests.pushBack(new TestIO);
-	tests.pushBack(new TestVertStrip);
+	tests.pushBack(new TestHorConv2Coef);
 
 	tests.pushBack(new TestIO);
-	tests.pushBack(new TestVertStrip4Coef);
+	tests.pushBack(new TestHorLiftSync2Coef);
 
 	tests.pushBack(new TestIO);
-	tests.pushBack(new TestVertStrip8Coef);
+	tests.pushBack(new TestHorLiftingAsync2Coef);
 
 	tests.pushBack(new TestIO);
-	tests.pushBack(new TestVertStrip16Coef);
+	tests.pushBack(new TestHorLiftingAsync8Coef);
+
+	//tests.pushBack(new TestIO);
+	//tests.pushBack(new TestVertStripSync);
+
+	//tests.pushBack(new TestIO);
+	//tests.pushBack(new TestVertStrip);
+
+	//tests.pushBack(new TestIO);
+	//tests.pushBack(new TestVertStrip4Coef);
+
+	//tests.pushBack(new TestIO);
+	//tests.pushBack(new TestVertStrip8Coef);
+
+	//tests.pushBack(new TestIO);
+	//tests.pushBack(new TestVertStrip16Coef);
+
+	//tests.pushBack(new TestIO);
+	//tests.pushBack(new TestVertTranspose);
 
 	//tests.clear();
 	//tests.pushBack(new TestIO);
@@ -802,16 +954,34 @@ void initTests(Vector<Ptr<Test>>& tests)
 	//tests.pushBack(new TestVerticalOverlapping);
 }
 
+class TestProfileMe
+{
+	UTprofiling m_profiling;
+public:
+	TestProfileMe(Ptr<ClFacade> facade):
+		m_profiling(facade)
+	{
+	}
+	void setEvent()
+	{
+		m_profiling.process();
+	}
+	ULONG waitAndGetTime()
+	{
+		return m_profiling.getTimerValue();
+	}
+};
+
 
 void performTests(Ptr<ClFacade> facade)
 {
-	{
-		TestVertTranspose debug;
-		debug.init(facade, int2(1024,1024));
+	//{
+	//	TestHorLiftingAsync8Coef debug;
+	//	debug.init(facade, int2(2816,2816));
 
-		debug.perform();
-	}
-	return;
+	//	debug.perform();
+	//}
+	//return;
 
 	const int repeats = 10;
 	Vector<int2> vecResolutions;
@@ -820,7 +990,7 @@ void performTests(Ptr<ClFacade> facade)
 	std::ofstream fs("stats.txt");
 	fs << "Method\tPixels\tms\n";
 
-	std::cout << "Method\tResolution\tms\n";
+	std::cout << "Method\tResolution\tns\n";
 	for (uint nRes = 0; nRes < vecResolutions.getSize(); nRes++)
 	{
 		Vector<Ptr<Test>> tests;
@@ -839,35 +1009,31 @@ void performTests(Ptr<ClFacade> facade)
 				fs << test->getName() << "\t" << res.getArea() << "\t"; 
 				test->init(facade, res);
 				
-				Ptr<cl::CommandQueue> queue = facade->getQueue();
-				queue->finish();
-
 				int count = test->getPerformsCount(res);
-				int start, end;
+				TestProfileMe start(facade), end(facade);
 
-				float bestTime = 11111111111111111.0f;
+
 				for (int i = 0; i < repeats; i++)
 				{
-					start = GetTickCount();
+					start.setEvent();
 					for (int i = 0; i < test->getPerformsCount(res); i++)
 					{
 						test->perform();
 					}
-					try {
-						queue->finish();
-					} catchCLError;
-					queue->finish();
-					end = GetTickCount();
+					end.setEvent();
 
-					float diff = end - start;
-					bestTime = std::min(diff, bestTime);
+					ULONG diff = end.waitAndGetTime() - start.waitAndGetTime();
+					std::cout << ((double)diff)/count << "\t";
+					fs << ((double)diff)/count << "\t";				
 				}
-				std::cout << ((float)bestTime)/count << std::endl;
-				fs << ((float)bestTime)/count << std::endl;
+				std::cout << "\n";
+				fs << "\n";
+				fs.flush();
 			}
 			catch (Error& err)
 			{
 				std::cout << "N/A" << std::endl;
+				fs << "N/A" << std::endl;
 			}
 		}
 	}

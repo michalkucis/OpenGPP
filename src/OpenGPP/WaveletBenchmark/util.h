@@ -106,9 +106,8 @@ public:
 	void setResolution(int2 res)
 	{
 		if (res != m_buffer1->getSize())
-		{
 			m_buffer1 = new ClBuffer2D(m_context, m_queue, res, getOptimalStride(res.x));
-		}
+
 		if (res != m_buffer2->getSize())
 			m_buffer2 = new ClBuffer2D(m_context, m_queue, res, getOptimalStride(res.x));
 	}
